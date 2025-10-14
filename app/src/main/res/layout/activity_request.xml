@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:padding="16dp"
+    android:layout_width="match_parent" android:layout_height="match_parent">
+
+    <!-- 검색 -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent" android:layout_height="wrap_content">
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etSearch" android:hint="@string/search"
+            android:layout_width="match_parent" android:layout_height="wrap_content"/>
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- 출발지/도착지 행 -->
+    <LinearLayout
+        android:layout_marginTop="12dp"
+        android:orientation="vertical"
+        android:layout_width="match_parent" android:layout_height="wrap_content">
+
+        <!-- ▼ 출발지 컨테이너 (탭해서 활성화) -->
+        <LinearLayout
+            android:id="@+id/llOrigin"
+            android:padding="12dp" android:background="@color/card_bg"
+            android:layout_width="match_parent" android:layout_height="wrap_content">
+            <TextView
+                android:id="@+id/tvOrigin" android:text="@string/origin"
+                android:textStyle="bold" android:layout_width="match_parent"
+                android:layout_height="wrap_content"/>
+        </LinearLayout>
+
+        <!-- ▼ 도착지 컨테이너 (탭해서 활성화) -->
+        <LinearLayout
+            android:id="@+id/llDestination"
+            android:layout_marginTop="8dp"
+            android:padding="12dp" android:background="@color/card_bg"
+            android:layout_width="match_parent" android:layout_height="wrap_content">
+            <TextView
+                android:id="@+id/tvDestination" android:text="@string/destination"
+                android:textStyle="bold" android:layout_width="match_parent"
+                android:layout_height="wrap_content"/>
+        </LinearLayout>
+
+        <!-- ▼ 경유지 모드 토글 -->
+        <TextView
+            android:id="@+id/tvAddWp"
+            android:text="@string/add_waypoint"
+            android:textColor="@color/primary"
+            android:layout_marginTop="8dp"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+    </LinearLayout>
+
+    <!-- 사이트 리스트 -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvSites"
+        android:layout_marginTop="12dp"
+        android:layout_width="match_parent" android:layout_height="0dp"
+        android:layout_weight="1"/>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnStartDelivery"
+        android:text="@string/start_delivery"
+        android:layout_marginTop="8dp"
+        android:layout_width="match_parent" android:layout_height="wrap_content"/>
+</LinearLayout>

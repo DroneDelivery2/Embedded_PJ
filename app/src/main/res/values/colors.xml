@@ -1,0 +1,6 @@
+<resources>
+    <color name="banner_bg">#E8F1FF</color>
+    <color name="card_bg">#F5F5F7</color>
+    <color name="primary">#2962FF</color>
+    <color name="text_primary">#222222</color>
+</resources>

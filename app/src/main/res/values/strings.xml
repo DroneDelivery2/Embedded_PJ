@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">Drone Delivery</string>
+    <string name="login">로그인</string>
+    <string name="delivery_status">배송현황</string>
+    <string name="start_delivery">배송시작</string>
+    <string name="search">SEARCH</string>
+    <string name="origin">출발지</string>
+    <string name="destination">도착지</string>
+    <string name="add_waypoint">경유지 추가</string>
+    <string name="eta_notice">5분 뒤 도착 예정입니다.</string>
+    <string name="arrived">우편물이 도착하였습니다.</string>
+    <string name="confirm_receive">수령 완료</string>
+</resources>

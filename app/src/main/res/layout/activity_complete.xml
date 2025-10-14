@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:padding="16dp"
+    android:layout_width="match_parent" android:layout_height="match_parent">
+
+    <LinearLayout
+        android:background="@color/banner_bg"
+        android:padding="12dp"
+        android:layout_width="match_parent" android:layout_height="wrap_content">
+        <TextView
+            android:id="@+id/tvCompleteBanner"
+            android:text="팝업알림\n우편물이 도착하였습니다."
+            android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+    </LinearLayout>
+
+    <TextView
+        android:text="배송 완료"
+        android:textStyle="bold" android:textSize="18sp"
+        android:layout_marginTop="16dp"
+        android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+
+    <LinearLayout
+        android:layout_marginTop="12dp"
+        android:padding="16dp" android:background="@color/card_bg"
+        android:layout_width="match_parent" android:layout_height="wrap_content">
+        <TextView
+            android:id="@+id/tvCompleteDetail"
+            android:text="우편물이 도착하였습니다.\nXXX 우체국\n...\nN4동 5층 옥상"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+    </LinearLayout>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnReceive"
+        android:text="@string/confirm_receive"
+        android:layout_gravity="bottom"
+        android:layout_marginTop="24dp"
+        android:layout_width="match_parent" android:layout_height="wrap_content"/>
+</LinearLayout>
