@@ -25,12 +25,11 @@ public class StatusActivity extends AppCompatActivity
     String dest = getIntent().getStringExtra("destination");
     List<String> wps = getIntent().getStringArrayListExtra("waypoints");
 
-    String detail =
-        "드론 배송 진행 중\n"
-            + (origin != null ? origin : "XXX 우체국")
-            + "\n"
-            + (wps != null && !wps.isEmpty() ? "경유지: " + wps + "\n" : "")
-            + (dest != null ? dest : "N4동 5층 옥상");
+    String detail = "드론 배송 진행 중\n"
+        + (origin != null ? origin : "XXX 우체국")
+        + "\n"
+        + (wps != null && !wps.isEmpty() ? "경유지: " + wps + "\n" : "")
+        + (dest != null ? dest : "N4동 5층 옥상");
     tvDetail.setText(detail);
 
     // 복귀 모드인지 확인
@@ -103,7 +102,7 @@ public class StatusActivity extends AppCompatActivity
   public void onLocationUpdate(double lat, double lng, double altitude) {
     runOnUiThread(
         () -> {
-          String locationInfo = String.format("위치: %.6f, %.6f (고도: %.0fm)", lat, lng, altitude);
+          String locationInfo = String.format(java.util.Locale.US, "위치: %.6f, %.6f (고도: %.0fm)", lat, lng, altitude);
           // 필요시 위치 정보를 UI에 표시할 수 있음
         });
   }
