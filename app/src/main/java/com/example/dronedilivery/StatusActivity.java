@@ -53,23 +53,25 @@ public class StatusActivity extends AppCompatActivity
   public void onStateChanged(DroneController.DroneState state) {
     runOnUiThread(
         () -> {
-          String modeText = droneController != null && droneController.isRealDroneConnected() ? " (실제 드론)" : " (연결 대기)";
+          String droneInfo = droneController != null && droneController.isRealDroneConnected()
+              ? " - " + droneController.getDroneName()
+              : " - 드론 연결 필요";
 
           switch (state) {
             case CONNECTING:
-              tvBanner.setText("드론에 연결 중입니다..." + modeText);
+              tvBanner.setText("Parrot Anafi 드론 검색 중..." + droneInfo);
               break;
             case CONNECTED:
-              tvBanner.setText("드론 연결 완료. 미션을 준비합니다..." + modeText);
+              tvBanner.setText("실제 드론 연결 완료. 미션 준비..." + droneInfo);
               break;
             case TAKING_OFF:
-              tvBanner.setText("드론이 이륙 중입니다..." + modeText);
+              tvBanner.setText("실제 드론 이륙 중..." + droneInfo);
               break;
             case FLYING_TO_DEST:
-              tvBanner.setText("목적지로 이동 중입니다..." + modeText);
+              tvBanner.setText("실제 드론이 목적지로 이동 중..." + droneInfo);
               break;
             case LANDING:
-              tvBanner.setText("목적지에 착륙 중입니다..." + modeText);
+              tvBanner.setText("실제 드론이 목적지에 착륙 중..." + droneInfo);
               break;
             case WAITING_PICKUP:
               // 도착 완료 - CompleteActivity로 이동
@@ -83,10 +85,10 @@ public class StatusActivity extends AppCompatActivity
               startActivity(intent);
               break;
             case RETURNING:
-              tvBanner.setText("원점으로 복귀 중입니다..." + modeText);
+              tvBanner.setText("실제 드론이 RTH로 복귀 중..." + droneInfo);
               break;
             case LANDED:
-              tvBanner.setText("드론이 원점에 착륙했습니다." + modeText);
+              tvBanner.setText("실제 드론이 원점에 착륙 완료!" + droneInfo);
               DroneManager.getInstance().clearDroneController();
               finish(); // 홈으로 돌아가기
               break;

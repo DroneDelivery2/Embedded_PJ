@@ -1,15 +1,15 @@
 plugins {
-    id("com.android.application")
+    id("com.android.application") version "7.4.2"
 }
 
 android {
     namespace = "com.example.dronedilivery"
-    compileSdk = 34
+    compileSdk = 33
 
     defaultConfig {
         applicationId = "com.example.dronedilivery"
         minSdk = 24
-        targetSdk = 34
+        targetSdk = 33
         versionCode = 1
         versionName = "1.0"
 
