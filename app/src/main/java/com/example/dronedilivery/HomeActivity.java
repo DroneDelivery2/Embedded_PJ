@@ -44,8 +44,8 @@ public class HomeActivity extends AppCompatActivity implements DroneController.D
     if (droneController != null) {
       if (droneController.isRealDroneConnected()) {
         Toast.makeText(this, "Parrot Anafi 드론이 연결되었습니다!", Toast.LENGTH_SHORT).show();
-      } else if (droneController.isSimulationMode()) {
-        Toast.makeText(this, "시뮬레이션 모드로 실행 중입니다.", Toast.LENGTH_SHORT).show();
+      } else if (!droneController.isRealDroneConnected()) {
+        Toast.makeText(this, "드론 연결 대기 중입니다.", Toast.LENGTH_SHORT).show();
       } else {
         Toast.makeText(this, "드론 연결을 시도 중입니다...", Toast.LENGTH_SHORT).show();
       }
@@ -64,7 +64,7 @@ public class HomeActivity extends AppCompatActivity implements DroneController.D
           statusText += "연결 중...";
           break;
         case CONNECTED:
-          statusText += droneController.isSimulationMode() ? "연결됨 (시뮬레이션)" : "연결됨 (실제 드론)";
+          statusText += droneController.isRealDroneConnected() ? "연결됨 (실제 드론)" : "연결됨 (시뮬레이션)";
           break;
         case DISCONNECTED:
           statusText += "연결 해제됨";

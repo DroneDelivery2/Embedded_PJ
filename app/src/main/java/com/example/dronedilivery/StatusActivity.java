@@ -53,7 +53,7 @@ public class StatusActivity extends AppCompatActivity
   public void onStateChanged(DroneController.DroneState state) {
     runOnUiThread(
         () -> {
-          String modeText = droneController != null && droneController.isSimulationMode() ? " (시뮬레이션)" : " (실제 드론)";
+          String modeText = droneController != null && droneController.isRealDroneConnected() ? " (실제 드론)" : " (연결 대기)";
 
           switch (state) {
             case CONNECTING:

@@ -1,5 +1,5 @@
 plugins {
-    id("com.android.application") version "8.1.4"
+    id("com.android.application")
 }
 
 android {
@@ -37,7 +37,7 @@ dependencies {
     implementation("androidx.recyclerview:recyclerview:1.3.2")
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
     
-    // Parrot Ground SDK for Anafi
+    // Parrot Ground SDK for Anafi drone connection
     implementation("com.parrot.drone.groundsdk:groundsdk:7.7.1")
     
     testImplementation("junit:junit:4.13.2")
