@@ -7,7 +7,6 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 
 import com.parrot.drone.groundsdk.GroundSdk;
-import com.parrot.drone.groundsdk.ManagedGroundSdk;
 import com.parrot.drone.groundsdk.Ref;
 import com.parrot.drone.groundsdk.device.Drone;
 import com.parrot.drone.groundsdk.device.pilotingitf.Activable;
@@ -19,7 +18,7 @@ import com.parrot.drone.groundsdk.facility.AutoConnection;
 
 import java.util.List;
 
-/** Parrot Anafi 드론 실제 제어 전용 클래스 - Ground SDK 7.x */
+/** Parrot Anafi 드론 실제 제어 전용 클래스 - Ground SDK 7.x 정확한 API */
 public class DroneController {
     private static final String TAG = "DroneController";
 
@@ -30,7 +29,9 @@ public class DroneController {
 
     public interface DroneStateListener {
         void onStateChanged(DroneState state);
+
         void onLocationUpdate(double lat, double lng, double altitude);
+
         void onError(String error);
     }
 
@@ -47,7 +48,7 @@ public class DroneController {
     private Ref<ReturnHomePilotingItf> returnHomeRef;
     private Ref<Gps> gpsRef;
     private Ref<Altimeter> altimeterRef;
-    private AutoConnection autoConnection;
+    private Ref<AutoConnection> autoConnectionRef;
 
     // 실제 드론 위치 정보
     private double currentLat = 0;
@@ -58,6 +59,7 @@ public class DroneController {
 
     // 드론 연결 상태
     private boolean isDroneConnected = false;
+    private String droneName = "No Drone";
 
     public DroneController(Context context) {
         this.context = context;
@@ -67,23 +69,24 @@ public class DroneController {
     /** Ground SDK 초기화 및 실제 드론 검색 */
     private void initGroundSdk() {
         Log.d(TAG, "Initializing Parrot Ground SDK 7.x for real drone connection...");
-        
+
         try {
             // GroundSdk 인스턴스 생성
             groundSdk = GroundSdk.newSession(context, null);
-            
+
             // 자동 연결 기능 활성화
-            autoConnection = groundSdk.getFacility(AutoConnection.class);
-            if (autoConnection != null) {
-                autoConnection.start();
-                Log.d(TAG, "AutoConnection started - searching for Parrot drones");
-            }
+            autoConnectionRef = groundSdk.getFacility(AutoConnection.class, autoConnection -> {
+                if (autoConnection != null) {
+                    autoConnection.start();
+                    Log.d(TAG, "AutoConnection started - searching for Parrot drones");
+                }
+            });
 
             setState(DroneState.CONNECTING);
-            
+
             // 실제 드론 검색 시작
             searchForRealDrones();
-            
+
         } catch (Exception e) {
             Log.e(TAG, "Failed to initialize Ground SDK: " + e.getMessage());
             setState(DroneState.ERROR);
@@ -94,11 +97,12 @@ public class DroneController {
     /** 실제 Parrot 드론 검색 */
     private void searchForRealDrones() {
         Log.d(TAG, "Searching for real Parrot Anafi drones...");
-        
-        // 드론 목록 모니터링
+
+        // 드론 목록 모니터링 - Ground SDK 7.x 정확한 API
         droneRef = groundSdk.getDrone(null, drone -> {
             if (drone != null) {
-                Log.d(TAG, "Found Parrot drone: " + drone.getName());
+                Log.d(TAG, "Found Parrot drone: " + drone.getUid());
+                droneName = drone.getUid();
                 connectToRealDrone(drone);
             } else {
                 Log.w(TAG, "No Parrot drones found. Make sure drone is powered on and in WiFi range.");
@@ -111,28 +115,27 @@ public class DroneController {
     /** 실제 드론에 연결 */
     private void connectToRealDrone(@NonNull Drone realDrone) {
         this.drone = realDrone;
-        Log.d(TAG, "Connecting to real Parrot drone: " + realDrone.getName());
+        Log.d(TAG, "Connecting to real Parrot drone: " + realDrone.getUid());
 
         // 드론 상태 모니터링
-        realDrone.getState(state -> {
-            Log.d(TAG, "Real drone connection state: " + state.getConnectionState());
-            
-            switch (state.getConnectionState()) {
-                case CONNECTED:
-                    onRealDroneConnected();
-                    break;
-                case CONNECTING:
-                    setState(DroneState.CONNECTING);
-                    break;
-                case DISCONNECTED:
-                    setState(DroneState.DISCONNECTED);
-                    isDroneConnected = false;
-                    break;
-            }
-        });
+        Drone.State state = realDrone.getState();
+        Log.d(TAG, "Real drone connection state: " + state.getConnectionState());
+
+        switch (state.getConnectionState()) {
+            case CONNECTED:
+                onRealDroneConnected();
+                break;
+            case CONNECTING:
+                setState(DroneState.CONNECTING);
+                break;
+            case DISCONNECTED:
+                setState(DroneState.DISCONNECTED);
+                isDroneConnected = false;
+                break;
+        }
 
         // 드론이 연결되지 않은 경우 연결 시도
-        if (realDrone.getState().getConnectionState() != Drone.ConnectionState.CONNECTED) {
+        if (state.getConnectionState() != Drone.ConnectionState.CONNECTED) {
             Log.d(TAG, "Attempting to connect to real drone...");
             realDrone.connect();
         }
@@ -160,12 +163,15 @@ public class DroneController {
 
         // 실제 GPS 모니터링
         gpsRef = drone.getInstrument(Gps.class, gps -> {
-            if (gps != null && gps.lastKnownLocation() != null) {
-                currentLat = gps.lastKnownLocation().getLatitude();
-                currentLng = gps.lastKnownLocation().getLongitude();
-                currentAlt = gps.lastKnownLocation().getAltitude();
-                notifyLocationUpdate();
-                Log.d(TAG, "Real GPS location: " + currentLat + ", " + currentLng + ", " + currentAlt + "m");
+            if (gps != null) {
+                // GPS 위치 정보 가져오기
+                if (gps.lastKnownLocation() != null) {
+                    currentLat = gps.lastKnownLocation().getLatitude();
+                    currentLng = gps.lastKnownLocation().getLongitude();
+                    currentAlt = gps.lastKnownLocation().getAltitude();
+                    notifyLocationUpdate();
+                    Log.d(TAG, "Real GPS location: " + currentLat + ", " + currentLng + ", " + currentAlt + "m");
+                }
             }
         });
 
@@ -202,11 +208,11 @@ public class DroneController {
         if (gps != null && gps.lastKnownLocation() != null) {
             originLat = currentLat;
             originLng = currentLng;
-            
+
             // 목적지 좌표 설정 (실제로는 주소를 좌표로 변환 필요)
             destLat = originLat + 0.001; // 약 100m 이동
             destLng = originLng + 0.001;
-            
+
             realTakeOff();
         } else {
             notifyError("GPS 신호를 받을 수 없습니다. 야외에서 시도하세요.");
@@ -223,10 +229,10 @@ public class DroneController {
 
         Log.d(TAG, "Real drone taking off...");
         setState(DroneState.TAKING_OFF);
-        
+
         // 실제 이륙 명령
         pilotingItf.takeOff();
-        
+
         // 이륙 완료 모니터링
         monitorRealTakeoff();
     }
@@ -248,7 +254,7 @@ public class DroneController {
     private void realFlyToDestination() {
         setState(DroneState.FLYING_TO_DEST);
         Log.d(TAG, "Real drone flying to destination: " + destLat + ", " + destLng);
-        
+
         // 실제로는 FlightPlan API나 수동 조종으로 목적지 이동
         // 현재는 간단한 예시로 10초 후 착륙
         handler.postDelayed(this::realLandAtDestination, 10000);
@@ -264,10 +270,10 @@ public class DroneController {
 
         Log.d(TAG, "Real drone landing at destination...");
         setState(DroneState.LANDING);
-        
+
         // 실제 착륙 명령
         pilotingItf.land();
-        
+
         // 착륙 완료 모니터링
         monitorRealLanding(() -> setState(DroneState.WAITING_PICKUP));
     }
@@ -277,7 +283,8 @@ public class DroneController {
         handler.postDelayed(() -> {
             if (currentAlt < 1) { // 1m 이하로 내려가면 착륙 완료
                 Log.d(TAG, "Real landing completed");
-                if (onComplete != null) onComplete.run();
+                if (onComplete != null)
+                    onComplete.run();
             } else if (currentState == DroneState.LANDING) {
                 // 아직 착륙 중이면 계속 모니터링
                 monitorRealLanding(onComplete);
@@ -299,12 +306,12 @@ public class DroneController {
         }
 
         Log.d(TAG, "Starting real drone return journey");
-        
+
         setState(DroneState.TAKING_OFF);
-        
+
         // 실제 이륙
         pilotingItf.takeOff();
-        
+
         handler.postDelayed(() -> {
             setState(DroneState.RETURNING);
             realReturnToHome();
@@ -314,13 +321,13 @@ public class DroneController {
     /** 실제 드론 RTH (Return To Home) */
     private void realReturnToHome() {
         Log.d(TAG, "Real drone returning to home...");
-        
+
         ReturnHomePilotingItf rth = returnHomeRef != null ? returnHomeRef.get() : null;
         if (rth != null && rth.state() == Activable.State.IDLE) {
             // 실제 Return Home 기능 사용
             rth.activate();
             Log.d(TAG, "Real Return to Home activated");
-            
+
             // RTH 완료 모니터링
             handler.postDelayed(() -> {
                 setState(DroneState.LANDED);
@@ -333,7 +340,7 @@ public class DroneController {
     private void setState(DroneState state) {
         this.currentState = state;
         Log.d(TAG, "Real drone state changed to: " + state);
-        
+
         if (listener != null) {
             listener.onStateChanged(state);
         }
@@ -348,7 +355,7 @@ public class DroneController {
     private void notifyError(String error) {
         Log.e(TAG, "Real drone error: " + error);
         setState(DroneState.ERROR);
-        
+
         if (listener != null) {
             listener.onError(error);
         }
@@ -359,28 +366,28 @@ public class DroneController {
     }
 
     public double[] getCurrentLocation() {
-        return new double[]{currentLat, currentLng, currentAlt};
+        return new double[] { currentLat, currentLng, currentAlt };
     }
 
     /** 실제 드론 연결 상태 확인 */
     public boolean isRealDroneConnected() {
-        return isDroneConnected && drone != null && 
-               drone.getState().getConnectionState() == Drone.ConnectionState.CONNECTED;
+        return isDroneConnected && drone != null &&
+                drone.getState().getConnectionState() == Drone.ConnectionState.CONNECTED;
     }
 
     /** 드론 이름 가져오기 */
     public String getDroneName() {
-        return drone != null ? drone.getName() : "No Drone";
+        return droneName;
     }
 
     /** 리소스 정리 */
     public void cleanup() {
         Log.d(TAG, "Cleaning up real drone resources...");
-        
+
         if (handler != null) {
             handler.removeCallbacksAndMessages(null);
         }
-        
+
         // Ref 객체들 정리
         if (droneRef != null) {
             droneRef.close();
@@ -397,19 +404,18 @@ public class DroneController {
         if (altimeterRef != null) {
             altimeterRef.close();
         }
-        
+        if (autoConnectionRef != null) {
+            autoConnectionRef.close();
+        }
+
         if (drone != null && drone.getState().getConnectionState() == Drone.ConnectionState.CONNECTED) {
             drone.disconnect();
         }
-        
-        if (autoConnection != null) {
-            autoConnection.stop();
-        }
-        
+
         if (groundSdk != null) {
             groundSdk.close();
         }
-        
+
         isDroneConnected = false;
     }
 }
