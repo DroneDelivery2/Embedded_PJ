@@ -79,30 +79,57 @@ public class DroneController {
 
   /** Parrot Ground SDK 초기화 */
   private void initParrotGroundSdk() {
-    groundSdk = ManagedGroundSdk.obtainSession(context);
+    try {
+      // Context가 Activity인지 확인
+      if (!(context instanceof android.app.Activity)) {
+        throw new IllegalArgumentException("Context must be an Activity for Ground SDK");
+      }
 
-    // 자동 연결 설정
-    autoConnection = groundSdk.getFacility(AutoConnection.class);
-    if (autoConnection != null) {
-      autoConnection.start();
+      android.app.Activity activity = (android.app.Activity) context;
+      groundSdk = ManagedGroundSdk.obtainSession(activity);
+
+      // 자동 연결 설정
+      autoConnection = groundSdk.getFacility(AutoConnection.class);
+      if (autoConnection != null) {
+        autoConnection.start();
+      }
+
+      setState(DroneState.CONNECTING);
+
+      // 드론 검색 및 연결
+      groundSdk.resume();
+
+      // 간단한 드론 검색
+      handler.postDelayed(() -> {
+        searchForDrones();
+      }, 2000);
+
+    } catch (Exception e) {
+      Log.e(TAG, "Failed to initialize Ground SDK: " + e.getMessage());
+      throw e;
     }
+  }
 
-    setState(DroneState.CONNECTING);
-
-    // 드론 검색 및 연결
-    groundSdk.resume();
-    GroundSdk.newSession(context, session -> {
-      session.getDevices(Drone.class, droneList -> {
-        if (!droneList.isEmpty()) {
-          connectToParrotDrone(droneList.get(0));
-        } else {
-          // 드론을 찾지 못하면 시뮬레이션 모드로 전환
-          Log.w(TAG, "No Parrot drone found, switching to simulation");
-          useSimulation = true;
-          startSimulationMode();
-        }
+  /** 드론 검색 */
+  private void searchForDrones() {
+    try {
+      GroundSdk.newSession(context, session -> {
+        session.getDevices(Drone.class, droneList -> {
+          if (!droneList.isEmpty()) {
+            Log.d(TAG, "Found " + droneList.size() + " drone(s)");
+            connectToParrotDrone(droneList.get(0));
+          } else {
+            Log.w(TAG, "No Parrot drone found, switching to simulation");
+            useSimulation = true;
+            startSimulationMode();
+          }
+        });
       });
-    });
+    } catch (Exception e) {
+      Log.e(TAG, "Error searching for drones: " + e.getMessage());
+      useSimulation = true;
+      startSimulationMode();
+    }
   }
 
   /** Parrot 드론 연결 */
