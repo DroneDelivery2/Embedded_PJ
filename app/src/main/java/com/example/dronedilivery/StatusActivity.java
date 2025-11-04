@@ -53,21 +53,23 @@ public class StatusActivity extends AppCompatActivity
   public void onStateChanged(DroneController.DroneState state) {
     runOnUiThread(
         () -> {
+          String modeText = droneController != null && droneController.isSimulationMode() ? " (시뮬레이션)" : " (실제 드론)";
+
           switch (state) {
             case CONNECTING:
-              tvBanner.setText("드론에 연결 중입니다...");
+              tvBanner.setText("드론에 연결 중입니다..." + modeText);
               break;
             case CONNECTED:
-              tvBanner.setText("드론 연결 완료. 미션을 준비합니다...");
+              tvBanner.setText("드론 연결 완료. 미션을 준비합니다..." + modeText);
               break;
             case TAKING_OFF:
-              tvBanner.setText("드론이 이륙 중입니다...");
+              tvBanner.setText("드론이 이륙 중입니다..." + modeText);
               break;
             case FLYING_TO_DEST:
-              tvBanner.setText("목적지로 이동 중입니다...");
+              tvBanner.setText("목적지로 이동 중입니다..." + modeText);
               break;
             case LANDING:
-              tvBanner.setText("목적지에 착륙 중입니다...");
+              tvBanner.setText("목적지에 착륙 중입니다..." + modeText);
               break;
             case WAITING_PICKUP:
               // 도착 완료 - CompleteActivity로 이동
@@ -81,10 +83,10 @@ public class StatusActivity extends AppCompatActivity
               startActivity(intent);
               break;
             case RETURNING:
-              tvBanner.setText("원점으로 복귀 중입니다...");
+              tvBanner.setText("원점으로 복귀 중입니다..." + modeText);
               break;
             case LANDED:
-              tvBanner.setText("드론이 원점에 착륙했습니다.");
+              tvBanner.setText("드론이 원점에 착륙했습니다." + modeText);
               DroneManager.getInstance().clearDroneController();
               finish(); // 홈으로 돌아가기
               break;
