@@ -1,0 +1,120 @@
+.main {
+  min-height: 100vh;
+  padding: 20px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 24px;
+  position: relative;
+}
+
+.header h1 {
+  flex: 1;
+  text-align: center;
+  font-size: 24px;
+  color: #333;
+}
+
+.backBtn {
+  position: absolute;
+  left: 0;
+  padding: 8px 16px;
+  background: white;
+  border-radius: 8px;
+  color: #2962FF;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.card {
+  background: white;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  margin-bottom: 16px;
+}
+
+.card h2 {
+  font-size: 16px;
+  margin-bottom: 12px;
+  color: #333;
+}
+
+.input {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 16px;
+  background: #f5f5f7;
+}
+
+.siteList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.siteItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  background: #f5f5f7;
+  border-radius: 8px;
+}
+
+.siteName {
+  font-size: 16px;
+  color: #333;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.siteCoords {
+  font-size: 12px;
+  color: #666;
+}
+
+.selectBtn {
+  padding: 8px 16px;
+  background: #2962FF;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.selectBtn:hover {
+  background: #1e4fd6;
+}
+
+.startBtn {
+  width: 100%;
+  padding: 16px;
+  background: #2962FF;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  margin-top: 8px;
+}
+
+.startBtn:hover:not(:disabled) {
+  background: #1e4fd6;
+}
+
+.startBtn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
