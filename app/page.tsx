@@ -136,6 +136,13 @@ export default function Home() {
       </div>
 
       <div className={styles.actions}>
+        <Link href="/control" className={styles.actionBtn}>
+          <div className={styles.btnContent}>
+            <span className={styles.icon}>🎮</span>
+            <span>드론 제어</span>
+          </div>
+        </Link>
+
         <Link href="/status" className={styles.actionBtn}>
           <div className={styles.btnContent}>
             <span className={styles.icon}>📊</span>

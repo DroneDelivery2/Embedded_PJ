@@ -11,19 +11,19 @@ export default function StatusPage() {
   const [isRefreshing, setIsRefreshing] = useState(false)
 
   useEffect(() => {
-    // 초기 상태 조회
+    // 초기 상태 조회만 (자동 갱신 제거)
     refreshStatus()
-
-    // 5초마다 자동 갱신
-    const interval = setInterval(refreshStatus, 5000)
-    return () => clearInterval(interval)
   }, [])
 
   const refreshStatus = async () => {
     setIsRefreshing(true)
     try {
-      const data = await droneApi.getStatus()
-      console.log('상태 페이지 - 상태 조회:', data)
+      // 수동 갱신 API 호출
+      const response = await fetch('http://localhost:5000/api/drone/status/refresh', {
+        method: 'POST'
+      })
+      const data = await response.json()
+      console.log('상태 페이지 - 상태 갱신:', data)
       
       if (data) {
         setStatus(data)
@@ -50,25 +50,7 @@ export default function StatusPage() {
     }
   }
 
-  const handleTakeoff = async () => {
-    const result = await droneApi.takeoff()
-    if (result.success) {
-      alert('이륙 성공!')
-      refreshStatus()
-    } else {
-      alert(`이륙 실패: ${result.message}`)
-    }
-  }
 
-  const handleLand = async () => {
-    const result = await droneApi.land()
-    if (result.success) {
-      alert('착륙 성공!')
-      refreshStatus()
-    } else {
-      alert(`착륙 실패: ${result.message}`)
-    }
-  }
 
   return (
     <main className={styles.main}>
@@ -167,31 +149,7 @@ export default function StatusPage() {
         </div>
       </div>
 
-      {status?.connected && (
-        <div className={styles.card}>
-          <h2>드론 제어</h2>
-          <div className={styles.controls}>
-            <button 
-              className={`${styles.controlBtn} ${styles.takeoffBtn}`}
-              onClick={handleTakeoff}
-              disabled={status.flying}
-            >
-              <span className={styles.controlIcon}>🚁</span>
-              <span className={styles.controlText}>이륙</span>
-              {status.flying && <span className={styles.disabledText}>(비행 중)</span>}
-            </button>
-            <button 
-              className={`${styles.controlBtn} ${styles.landBtn}`}
-              onClick={handleLand}
-              disabled={!status.flying}
-            >
-              <span className={styles.controlIcon}>🛬</span>
-              <span className={styles.controlText}>착륙</span>
-              {!status.flying && <span className={styles.disabledText}>(지상)</span>}
-            </button>
-          </div>
-        </div>
-      )}
+
 
       <div className={styles.card}>
         <h2>배송 정보</h2>

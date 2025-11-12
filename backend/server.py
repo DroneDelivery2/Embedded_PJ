@@ -72,7 +72,7 @@ def disconnect_drone():
 
 @app.route('/api/drone/status', methods=['GET'])
 def get_status():
-    """드론 상태 조회"""
+    """드론 상태 조회 (캐시된 값 반환)"""
     try:
         status = drone.get_status()
         if status:
@@ -86,6 +86,28 @@ def get_status():
             })
     except Exception as e:
         logger.error(f"상태 조회 오류: {e}")
+        return jsonify({
+            'connected': False,
+            'battery': 0,
+            'gps': {'latitude': 0, 'longitude': 0, 'altitude': 0},
+            'flying': False,
+            'error': str(e)
+        }), 500
+
+
+@app.route('/api/drone/status/refresh', methods=['POST'])
+def refresh_status():
+    """드론 상태 수동 갱신"""
+    try:
+        logger.info("🔄 수동 상태 갱신 요청")
+        
+        # 캐시 강제 업데이트
+        drone._update_cached_status()
+        
+        status = drone.get_status()
+        return jsonify(status)
+    except Exception as e:
+        logger.error(f"상태 갱신 오류: {e}")
         return jsonify({
             'connected': False,
             'battery': 0,
@@ -114,19 +136,11 @@ def takeoff():
             }), 400
         
         logger.info("🚁 이륙 명령 실행...")
-        success = drone.takeoff()
-        
-        # 이륙 후 상태 업데이트
-        if success:
-            import time
-            time.sleep(1)
-            new_status = drone.get_status()
-            logger.info(f"✅ 이륙 완료! 고도: {new_status['gps']['altitude']:.1f}m")
+        success, message = drone.takeoff()
         
         return jsonify({
             'success': success,
-            'message': '이륙 성공' if success else '이륙 실패',
-            'status': drone.get_status()  # 최신 상태 반환
+            'message': message
         })
     except Exception as e:
         logger.error(f"❌ 이륙 오류: {e}")
@@ -145,26 +159,13 @@ def land():
                 'message': '드론이 연결되지 않았습니다'
             }), 400
         
-        if not current_status.get('flying'):
-            return jsonify({
-                'success': False,
-                'message': '드론이 이미 지상에 있습니다'
-            }), 400
-        
+        # flying 상태 체크 제거 (상태 조회가 정확하지 않을 수 있음)
         logger.info("🛬 착륙 명령 실행...")
-        success = drone.land()
-        
-        # 착륙 후 상태 업데이트
-        if success:
-            import time
-            time.sleep(1)
-            new_status = drone.get_status()
-            logger.info(f"✅ 착륙 완료! 고도: {new_status['gps']['altitude']:.1f}m")
+        success, message = drone.land()
         
         return jsonify({
             'success': success,
-            'message': '착륙 성공' if success else '착륙 실패',
-            'status': drone.get_status()  # 최신 상태 반환
+            'message': message
         })
     except Exception as e:
         logger.error(f"❌ 착륙 오류: {e}")

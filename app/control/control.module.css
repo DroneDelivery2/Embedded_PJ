@@ -1,0 +1,139 @@
+.main {
+  min-height: 100vh;
+  padding: 2rem;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.backBtn {
+  padding: 0.5rem 1rem;
+  background: #f0f0f0;
+  border-radius: 8px;
+  text-decoration: none;
+  color: #333;
+  transition: background 0.2s;
+}
+
+.backBtn:hover {
+  background: #e0e0e0;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 2rem;
+}
+
+.card {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  margin-bottom: 2rem;
+}
+
+.card h2 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+}
+
+.warning {
+  background: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  color: #856404;
+}
+
+.message {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  font-weight: 500;
+}
+
+.controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.controlBtn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 2rem 1rem;
+  border: none;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.controlBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.icon {
+  font-size: 3rem;
+}
+
+.takeoffBtn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.takeoffBtn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.landBtn {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  color: white;
+}
+
+.landBtn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(245, 87, 108, 0.4);
+}
+
+.info {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.info h3 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  color: #333;
+}
+
+.info ol, .info ul {
+  margin: 0;
+  padding-left: 1.5rem;
+}
+
+.info li {
+  margin-bottom: 0.5rem;
+  line-height: 1.6;
+}
+
+@media (max-width: 600px) {
+  .controls {
+    grid-template-columns: 1fr;
+  }
+}
