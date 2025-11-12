@@ -1,184 +1,173 @@
-#!/usr/bin/env python3
-"""
-드론 제어 REST API 서버
-Flask를 사용한 백엔드 서버
-"""
-
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify
 from flask_cors import CORS
 import logging
-import os
+from drone_controller import DroneController
 
-# 프록시 모드 확인
-USE_PROXY = os.getenv('USE_PROXY', 'false').lower() == 'true'
-
-if USE_PROXY:
-    from drone_controller_proxy import DroneController
-    logger = logging.getLogger(__name__)
-    logger.info("🔄 프록시 모드로 실행 (Windows 프록시 사용)")
-else:
-    from drone_controller import DroneController
-    logger = logging.getLogger(__name__)
-    logger.info("🚁 직접 모드로 실행 (Olympe SDK)")
-
-app = Flask(__name__)
-CORS(app)  # CORS 허용
-
-logging.basicConfig(level=logging.INFO)
+# 로깅 설정
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 logger = logging.getLogger(__name__)
 
-# 드론 컨트롤러 인스턴스
-drone = DroneController()
+# Flask 애플리케이션 생성
+app = Flask(__name__)
+
+# CORS 설정 - Next.js PWA origin 허용
+CORS(app, resources={
+    r"/api/*": {
+        "origins": [
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+            "http://localhost:8000",
+            "http://127.0.0.1:8000"
+        ]
+    }
+})
+
+# 드론 컨트롤러 인스턴스 (전역)
+drone_controller = None
 
 
-@app.route('/api/drone/connect', methods=['POST'])
-def connect_drone():
-    """드론 연결"""
+# 기본 라우트
+@app.route('/')
+def index():
+    return jsonify({
+        "message": "Parrot ANAFI Flask 브리지 서버",
+        "status": "running"
+    })
+
+
+# 상태 조회 엔드포인트
+@app.route('/api/status', methods=['GET'])
+def get_status():
+    """드론 연결 상태 조회"""
+    logger.info("상태 조회 요청 수신")
+    
+    if drone_controller is None:
+        return jsonify({
+            "connected": False,
+            "message": "드론 컨트롤러가 초기화되지 않았습니다"
+        })
+    
+    connected = drone_controller.is_connected()
+    message = "드론이 연결되었습니다" if connected else "드론이 연결되지 않았습니다"
+    
+    logger.info(f"상태 응답: connected={connected}")
+    
+    return jsonify({
+        "connected": connected,
+        "message": message
+    })
+
+
+# 이륙 명령 엔드포인트
+@app.route('/api/takeoff', methods=['POST'])
+def takeoff():
+    """드론 이륙 명령"""
+    logger.info("이륙 명령 요청 수신")
+    
+    if drone_controller is None:
+        logger.error("드론 컨트롤러가 초기화되지 않았습니다")
+        return jsonify({
+            "success": False,
+            "message": "드론 컨트롤러가 초기화되지 않았습니다"
+        }), 500
+    
+    success, message = drone_controller.takeoff()
+    
+    if success:
+        logger.info(f"이륙 성공: {message}")
+        return jsonify({
+            "success": True,
+            "message": message
+        }), 200
+    else:
+        logger.error(f"이륙 실패: {message}")
+        return jsonify({
+            "success": False,
+            "message": message
+        }), 500
+
+
+# 착륙 명령 엔드포인트
+@app.route('/api/land', methods=['POST'])
+def land():
+    """드론 착륙 명령"""
+    logger.info("착륙 명령 요청 수신")
+    
+    if drone_controller is None:
+        logger.error("드론 컨트롤러가 초기화되지 않았습니다")
+        return jsonify({
+            "success": False,
+            "message": "드론 컨트롤러가 초기화되지 않았습니다"
+        }), 500
+    
+    success, message = drone_controller.land()
+    
+    if success:
+        logger.info(f"착륙 성공: {message}")
+        return jsonify({
+            "success": True,
+            "message": message
+        }), 200
+    else:
+        logger.error(f"착륙 실패: {message}")
+        return jsonify({
+            "success": False,
+            "message": message
+        }), 500
+
+
+def initialize_drone():
+    """드론 컨트롤러 초기화 및 연결"""
+    global drone_controller
+    
     try:
-        data = request.json or {}
-        drone_ip = data.get('ip', '192.168.42.1')
+        logger.info("드론 컨트롤러 초기화 중...")
+        drone_controller = DroneController()
         
-        logger.info(f"드론 연결 요청: {drone_ip}")
-        
-        # 드론 IP 설정
-        drone.drone_ip = drone_ip
-        
-        # 연결 시도
-        success = drone.connect()
-        
-        if success:
-            logger.info("드론 연결 성공!")
-            return jsonify({
-                'success': True,
-                'message': '드론 연결 성공'
-            })
+        logger.info("드론 연결 시도 중...")
+        if drone_controller.connect():
+            logger.info("드론 연결 성공")
         else:
-            logger.error("드론 연결 실패")
-            return jsonify({
-                'success': False,
-                'message': '드론 연결 실패 - 드론 WiFi 연결을 확인하세요'
-            })
+            logger.warning("드론 연결 실패 - 수동으로 재연결 필요")
             
     except Exception as e:
-        logger.error(f"연결 오류: {e}")
-        return jsonify({
-            'success': False,
-            'message': f'연결 오류: {str(e)}'
-        }), 500
+        logger.error(f"드론 초기화 실패: {str(e)}")
+        drone_controller = DroneController()  # 연결 실패해도 컨트롤러는 생성
 
 
-@app.route('/api/drone/disconnect', methods=['POST'])
-def disconnect_drone():
+def cleanup_drone():
     """드론 연결 해제"""
-    try:
-        drone.disconnect()
-        return jsonify({'success': True, 'message': '드론 연결 해제'})
-    except Exception as e:
-        logger.error(f"연결 해제 오류: {e}")
-        return jsonify({'success': False, 'message': str(e)}), 500
-
-
-@app.route('/api/drone/status', methods=['GET'])
-def get_status():
-    """드론 상태 조회"""
-    try:
-        status = drone.get_status()
-        if status:
-            return jsonify(status)
-        else:
-            return jsonify({
-                'connected': False,
-                'battery': 0,
-                'gps': {'latitude': 0, 'longitude': 0, 'altitude': 0},
-                'flying': False
-            })
-    except Exception as e:
-        logger.error(f"상태 조회 오류: {e}")
-        return jsonify({
-            'connected': False,
-            'battery': 0,
-            'gps': {'latitude': 0, 'longitude': 0, 'altitude': 0},
-            'flying': False,
-            'error': str(e)
-        }), 500
-
-
-@app.route('/api/drone/takeoff', methods=['POST'])
-def takeoff():
-    """이륙"""
-    try:
-        success = drone.takeoff()
-        return jsonify({
-            'success': success,
-            'message': '이륙 성공' if success else '이륙 실패'
-        })
-    except Exception as e:
-        logger.error(f"이륙 오류: {e}")
-        return jsonify({'success': False, 'message': str(e)}), 500
-
-
-@app.route('/api/drone/land', methods=['POST'])
-def land():
-    """착륙"""
-    try:
-        success = drone.land()
-        return jsonify({
-            'success': success,
-            'message': '착륙 성공' if success else '착륙 실패'
-        })
-    except Exception as e:
-        logger.error(f"착륙 오류: {e}")
-        return jsonify({'success': False, 'message': str(e)}), 500
-
-
-@app.route('/api/drone/move', methods=['POST'])
-def move_to():
-    """지정 위치로 이동"""
-    try:
-        data = request.json
-        lat = data.get('latitude')
-        lng = data.get('longitude')
-        alt = data.get('altitude', 10)
-        
-        if lat is None or lng is None:
-            return jsonify({'success': False, 'message': '위도/경도 필요'}), 400
-        
-        success = drone.move_to(lat, lng, alt)
-        return jsonify({
-            'success': success,
-            'message': '이동 성공' if success else '이동 실패'
-        })
-    except Exception as e:
-        logger.error(f"이동 오류: {e}")
-        return jsonify({'success': False, 'message': str(e)}), 500
-
-
-@app.route('/api/drone/mission', methods=['POST'])
-def start_mission():
-    """미션 시작"""
-    try:
-        data = request.json
-        waypoints = data.get('waypoints', [])
-        
-        if not waypoints:
-            return jsonify({'success': False, 'message': '웨이포인트 필요'}), 400
-        
-        success = drone.start_mission(waypoints)
-        return jsonify({
-            'success': success,
-            'message': '미션 완료' if success else '미션 실패'
-        })
-    except Exception as e:
-        logger.error(f"미션 오류: {e}")
-        return jsonify({'success': False, 'message': str(e)}), 500
-
-
-@app.route('/health', methods=['GET'])
-def health_check():
-    """헬스 체크"""
-    return jsonify({'status': 'ok'})
+    global drone_controller
+    
+    if drone_controller is not None:
+        logger.info("드론 연결 해제 중...")
+        drone_controller.disconnect()
+        logger.info("드론 연결 해제 완료")
 
 
 if __name__ == '__main__':
-    logger.info("드론 제어 서버 시작...")
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    import signal
+    import sys
+    
+    # 시그널 핸들러 등록 (Ctrl+C 처리)
+    def signal_handler(sig, frame):
+        logger.info("\n서버 종료 신호 수신...")
+        cleanup_drone()
+        sys.exit(0)
+    
+    signal.signal(signal.SIGINT, signal_handler)
+    
+    # 드론 초기화
+    initialize_drone()
+    
+    # Flask 서버 시작
+    logger.info("Flask 브리지 서버 시작 중...")
+    logger.info("서버 주소: http://0.0.0.0:5000")
+    
+    try:
+        app.run(host='0.0.0.0', port=5000, debug=True, use_reloader=False)
+    finally:
+        cleanup_drone()

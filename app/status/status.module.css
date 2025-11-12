@@ -1,146 +1,340 @@
-.main {
+.container {
   min-height: 100vh;
-  padding: 20px;
-  max-width: 600px;
-  margin: 0 auto;
+  background: #f5f5f5;
+  padding-bottom: 2rem;
 }
 
+/* 헤더 */
 .header {
+  background: white;
+  padding: 1rem 1.5rem;
   display: flex;
   align-items: center;
-  margin-bottom: 24px;
+  justify-content: center;
   position: relative;
-}
-
-.header h1 {
-  flex: 1;
-  text-align: center;
-  font-size: 24px;
-  color: #333;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .backBtn {
   position: absolute;
-  left: 0;
-  padding: 8px 16px;
-  background: white;
+  left: 1rem;
+  color: #2563eb;
+  text-decoration: none;
+  font-size: 1rem;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
   border-radius: 8px;
-  color: #2962FF;
-  font-weight: 600;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  background: white;
+  border: 1px solid #e5e7eb;
+  transition: all 0.2s;
 }
 
-.banner {
-  background: linear-gradient(135deg, #2962FF 0%, #1e4fd6 100%);
-  color: white;
-  padding: 24px;
+.backBtn:hover {
+  background: #f9fafb;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+/* 메인 */
+.main {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* 상태 카드 */
+.statusCard {
+  background: #2563eb;
   border-radius: 16px;
-  text-align: center;
-  margin-bottom: 16px;
-  box-shadow: 0 4px 16px rgba(41, 98, 255, 0.3);
+  padding: 2rem;
+  box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2);
 }
 
-.banner p {
-  font-size: 20px;
+.statusBadge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.statusDot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+.statusDot.connected {
+  background: #10b981;
+}
+
+.statusDot.disconnected {
+  background: #ef4444;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.statusText {
+  color: white;
+  font-size: 1.25rem;
   font-weight: 600;
 }
 
+/* 카드 */
 .card {
   background: white;
   border-radius: 16px;
-  padding: 20px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-  margin-bottom: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-.card h2 {
-  font-size: 18px;
-  margin-bottom: 16px;
-  color: #333;
-}
-
-.location {
+.cardHeader {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
 }
 
-.location p {
-  font-size: 16px;
-  color: #666;
-  padding: 8px;
-  background: #f5f5f7;
-  border-radius: 6px;
-}
-
-.info {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.info p {
-  font-size: 16px;
-  color: #666;
-}
-
-.info strong {
-  color: #333;
-  margin-right: 8px;
-}
-
-.battery {
-  font-size: 16px;
-  margin-top: 8px;
-  opacity: 0.9;
+.cardTitle {
+  margin: 0 0 1.5rem 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1f2937;
 }
 
 .refreshBtn {
-  width: 100%;
-  padding: 12px;
-  background: #2962FF;
+  background: #2563eb;
   color: white;
   border: none;
   border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
   cursor: pointer;
-  margin-top: 12px;
-  transition: background 0.2s;
+  transition: all 0.2s;
 }
 
-.refreshBtn:hover:not(:disabled) {
-  background: #1e4fd6;
+.refreshBtn:hover {
+  background: #1d4ed8;
 }
 
-.refreshBtn:disabled {
-  background: #ccc;
-  cursor: not-allowed;
+/* 위치 정보 */
+.locationInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
-.controls {
+.locationItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: #f9fafb;
+  border-radius: 8px;
+}
+
+.locationLabel {
+  font-size: 1rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.locationValue {
+  font-size: 1rem;
+  color: #1f2937;
+  font-weight: 600;
+  font-family: 'Courier New', monospace;
+}
+
+/* 배송 정보 */
+.deliveryInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.infoRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.infoRow:last-child {
+  border-bottom: none;
+}
+
+.infoLabel {
+  font-size: 1rem;
+  color: #1f2937;
+  font-weight: 600;
+}
+
+.infoValue {
+  font-size: 1rem;
+  color: #6b7280;
+}
+
+/* 제어 버튼 */
+.controlButtons {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: 1rem;
+  margin-top: 0.5rem;
 }
 
 .controlBtn {
-  padding: 16px;
-  background: #4CAF50;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 16px;
+  padding: 1.25rem;
+  font-size: 1.125rem;
   font-weight: 600;
+  border: none;
+  border-radius: 12px;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .controlBtn:hover:not(:disabled) {
-  background: #45a049;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.controlBtn:active:not(:disabled) {
+  transform: translateY(0);
 }
 
 .controlBtn:disabled {
-  background: #ccc;
+  opacity: 0.5;
   cursor: not-allowed;
+}
+
+.takeoffBtn {
+  background: #2563eb;
+  color: white;
+}
+
+.takeoffBtn:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.landBtn {
+  background: #ef4444;
+  color: white;
+}
+
+.landBtn:hover:not(:disabled) {
+  background: #dc2626;
+}
+
+/* 알림 */
+.notification {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 1rem 2rem;
+  border-radius: 12px;
+  font-weight: 500;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  animation: slideUp 0.3s ease;
+  max-width: 90%;
+  text-align: center;
+  z-index: 1000;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.notification.success {
+  background: #10b981;
+  color: white;
+}
+
+.notification.error {
+  background: #ef4444;
+  color: white;
+}
+
+.notification.info {
+  background: #3b82f6;
+  color: white;
+}
+
+/* 모바일 대응 */
+@media (max-width: 768px) {
+  .header {
+    padding: 1rem;
+  }
+
+  .backBtn {
+    left: 0.5rem;
+    padding: 0.4rem 0.8rem;
+    font-size: 0.9rem;
+  }
+
+  .title {
+    font-size: 1.25rem;
+  }
+
+  .main {
+    padding: 1rem;
+  }
+
+  .statusCard {
+    padding: 1.5rem;
+  }
+
+  .card {
+    padding: 1.25rem;
+  }
+
+  .cardTitle {
+    font-size: 1.125rem;
+  }
+
+  .controlButtons {
+    grid-template-columns: 1fr;
+  }
+
+  .controlBtn {
+    padding: 1rem;
+    font-size: 1rem;
+  }
+
+  .locationItem,
+  .infoRow {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .locationValue,
+  .infoValue {
+    font-size: 0.9rem;
+  }
 }

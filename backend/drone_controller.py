@@ -1,15 +1,8 @@
-#!/usr/bin/env python3
-"""
-Parrot Anafi 드론 제어 모듈
-Olympe SDK를 사용한 드론 연결 및 제어
-공식 문서: https://developer.parrot.com/docs/olympe/
-"""
-
 import olympe
-from olympe.messages.ardrone3.Piloting import TakeOff, Landing, moveBy
-from olympe.messages.ardrone3.PilotingState import FlyingStateChanged, PositionChanged, AttitudeChanged
-from olympe.messages.common.CommonState import BatteryStateChanged
+from olympe.messages.ardrone3.Piloting import TakeOff, Landing, UserTakeOff
+from olympe.messages.ardrone3.PilotingState import FlyingStateChanged, AlertStateChanged
 from olympe.messages.ardrone3.GPSSettingsState import GPSFixStateChanged
+from olympe.messages.common.CommonState import BatteryStateChanged
 import logging
 import time
 
@@ -18,248 +11,204 @@ logger = logging.getLogger(__name__)
 
 
 class DroneController:
+    """Olympe SDK를 사용한 ANAFI 드론 제어 클래스"""
+    
     def __init__(self, drone_ip="192.168.42.1"):
         """
-        드론 컨트롤러 초기화
-        :param drone_ip: Parrot Anafi 드론 IP (기본값: 192.168.42.1)
+        DroneController 초기화
+        
+        Args:
+            drone_ip: 드론의 IP 주소 (기본값: 192.168.42.1)
         """
         self.drone_ip = drone_ip
-        self.drone = None
-        self.is_connected = False
-        
+        self.drone = olympe.Drone(drone_ip)
+        self.connected = False
+        logger.info(f"DroneController 초기화 완료 (IP: {drone_ip})")
+    
     def connect(self):
-        """드론 연결 (Olympe 공식 방식)"""
+        """
+        드론에 연결 시도
+        
+        Returns:
+            bool: 연결 성공 시 True, 실패 시 False
+        """
         try:
-            logger.info(f"드론 연결 시도: {self.drone_ip}")
+            logger.info(f"드론 연결 시도 중... (IP: {self.drone_ip})")
+            success = self.drone.connect()
             
-            # 기존 연결 정리
-            if self.drone is not None:
-                try:
-                    if self.is_connected:
-                        self.drone.disconnect()
-                except Exception as e:
-                    logger.debug(f"기존 연결 정리 중 에러 (무시): {e}")
-                self.drone = None
-            
-            # 드론 인스턴스 생성
-            self.drone = olympe.Drone(self.drone_ip)
-            
-            # 연결 시도 (공식 문서 방식)
-            assert self.drone.connect(retry=3)
-            
-            self.is_connected = True
-            logger.info("✅ 드론 연결 성공!")
-            
-            # 상태 안정화 대기
-            time.sleep(1)
-            
-            return True
-            
-        except AssertionError:
-            logger.error("❌ 드론 연결 실패: 연결 타임아웃")
-            self.is_connected = False
-            return False
+            if success:
+                self.connected = True
+                logger.info("드론 연결 성공")
+                return True
+            else:
+                self.connected = False
+                logger.error("드론 연결 실패")
+                return False
+                
         except Exception as e:
-            logger.error(f"❌ 드론 연결 실패: {e}")
-            self.is_connected = False
+            self.connected = False
+            logger.error(f"드론 연결 실패: {str(e)}")
             return False
     
     def disconnect(self):
-        """드론 연결 해제 (Olympe 공식 방식)"""
-        if self.drone is not None:
-            try:
-                self.drone.disconnect()
-                logger.info("드론 연결 해제")
-            except Exception as e:
-                logger.error(f"연결 해제 중 에러: {e}")
-            finally:
-                self.is_connected = False
-                self.drone = None
-    
-    def get_status(self):
-        """드론 상태 조회 (Olympe 공식 방식)"""
-        if not self.is_connected or self.drone is None:
-            return {
-                "connected": False,
-                "battery": 0,
-                "gps": {"latitude": 0, "longitude": 0, "altitude": 0},
-                "flying": False
-            }
+        """
+        드론 연결 해제
         
+        Returns:
+            bool: 연결 해제 성공 시 True, 실패 시 False
+        """
         try:
-            status = {
-                "connected": True,
-                "battery": 0,
-                "gps": {"latitude": 0, "longitude": 0, "altitude": 0},
-                "flying": False
-            }
+            if self.connected:
+                logger.info("드론 연결 해제 중...")
+                self.drone.disconnect()
+                self.connected = False
+                logger.info("드론 연결 해제 완료")
+                return True
+            else:
+                logger.warning("드론이 연결되어 있지 않습니다")
+                return True
+                
+        except Exception as e:
+            logger.error(f"드론 연결 해제 실패: {str(e)}")
+            return False
+    
+    def is_connected(self):
+        """
+        현재 드론 연결 상태 확인
+        
+        Returns:
+            bool: 연결되어 있으면 True, 아니면 False
+        """
+        return self.connected
+    
+    def check_preflight_status(self):
+        """
+        이륙 전 드론 상태 확인
+        
+        Returns:
+            tuple: (준비 완료 여부, 메시지)
+        """
+        try:
+            # 배터리 상태 확인
+            battery = self.drone.get_state(BatteryStateChanged)
+            if battery:
+                battery_percent = battery["percent"]
+                logger.info(f"배터리 잔량: {battery_percent}%")
+                if battery_percent < 20:
+                    return False, f"배터리 부족 ({battery_percent}%). 20% 이상 필요합니다."
             
-            # 배터리 상태 (Olympe 공식 방식)
-            battery_state = self.drone.get_state(BatteryStateChanged)
-            if battery_state is not None:
-                status["battery"] = int(battery_state["percent"])
-            
-            # GPS 위치 (Olympe 공식 방식)
-            position_state = self.drone.get_state(PositionChanged)
-            if position_state is not None:
-                status["gps"]["latitude"] = float(position_state["latitude"])
-                status["gps"]["longitude"] = float(position_state["longitude"])
-                status["gps"]["altitude"] = float(position_state["altitude"])
-            
-            # 비행 상태 (Olympe 공식 방식)
+            # 비행 상태 확인
             flying_state = self.drone.get_state(FlyingStateChanged)
-            if flying_state is not None:
-                # FlyingStateChanged의 state 값: landed, takingoff, hovering, flying, landing, emergency
-                state_value = flying_state["state"]
-                status["flying"] = state_value in ["flying", "hovering", "takingoff"]
+            if flying_state:
+                state = flying_state["state"]
+                logger.info(f"현재 비행 상태: {state}")
+                if state != "landed":
+                    return False, f"드론이 착륙 상태가 아닙니다 (현재: {state})"
             
-            return status
+            # GPS 상태 확인
+            gps_state = self.drone.get_state(GPSFixStateChanged)
+            if gps_state:
+                logger.info(f"GPS 상태: {gps_state}")
+            else:
+                logger.warning("GPS 상태를 확인할 수 없습니다 (실내 모드일 수 있음)")
+            
+            # 알림 상태 확인
+            alert_state = self.drone.get_state(AlertStateChanged)
+            if alert_state:
+                logger.info(f"알림 상태: {alert_state}")
+            
+            return True, "이륙 준비 완료"
             
         except Exception as e:
-            logger.error(f"상태 조회 실패: {e}")
-            return {
-                "connected": True,
-                "battery": 0,
-                "gps": {"latitude": 0, "longitude": 0, "altitude": 0},
-                "flying": False
-            }
+            logger.error(f"사전 점검 실패: {str(e)}")
+            return True, "사전 점검 건너뜀"  # 점검 실패해도 이륙 시도
     
     def takeoff(self):
-        """이륙 (Olympe 공식 방식)"""
-        if not self.is_connected or self.drone is None:
-            logger.error("드론이 연결되지 않음")
-            return False
+        """
+        드론 이륙 명령 실행
+        
+        Returns:
+            tuple: (성공 여부, 메시지)
+        """
+        if not self.connected:
+            msg = "드론이 연결되지 않았습니다"
+            logger.error(f"이륙 실패: {msg}")
+            return False, msg
+        
+        # 사전 점검
+        ready, check_msg = self.check_preflight_status()
+        logger.info(f"사전 점검 결과: {check_msg}")
+        if not ready:
+            logger.warning(f"사전 점검 경고: {check_msg}")
+            # 경고만 하고 계속 진행 (사용자가 판단)
         
         try:
-            logger.info("🚁 이륙 시작...")
+            logger.info("이륙 명령 전송 중...")
             
-            # Olympe 공식 방식: assert를 사용한 명령 전송 및 대기
-            assert self.drone(
-                TakeOff()
-                >> FlyingStateChanged(state="hovering", _timeout=10)
-            ).wait().success()
+            # 이륙 명령만 전송 (상태 변화 기다리지 않음)
+            self.drone(TakeOff())
+            logger.info("이륙 명령 전송 완료")
             
-            logger.info("✅ 이륙 완료!")
-            return True
+            # 5초 대기
+            time.sleep(5)
             
-        except AssertionError:
-            logger.error("❌ 이륙 실패: 타임아웃 또는 명령 실패")
-            return False
+            # 현재 상태 확인
+            flying_state = self.drone.get_state(FlyingStateChanged)
+            if flying_state:
+                state = flying_state["state"]
+                logger.info(f"5초 후 비행 상태: {state}")
+                
+                if state in ["takingoff", "hovering", "flying"]:
+                    msg = f"이륙 성공! (상태: {state})"
+                    logger.info(msg)
+                    return True, msg
+                elif state == "landed":
+                    msg = "이륙 명령을 전송했지만 드론이 이륙하지 않았습니다. FreeFlight 앱으로 드론 상태를 확인하세요."
+                    logger.warning(msg)
+                    return False, msg
+                else:
+                    msg = f"드론 상태: {state}"
+                    logger.info(msg)
+                    return True, msg
+            else:
+                msg = "이륙 명령을 전송했습니다 (상태 확인 불가)"
+                logger.warning(msg)
+                return True, msg
+                
         except Exception as e:
-            logger.error(f"❌ 이륙 실패: {e}")
-            return False
+            msg = f"이륙 실패: {str(e)}"
+            logger.error(msg)
+            logger.exception("이륙 명령 예외 발생:")
+            return False, msg
     
     def land(self):
-        """착륙 (Olympe 공식 방식)"""
-        if not self.is_connected or self.drone is None:
-            logger.error("드론이 연결되지 않음")
-            return False
+        """
+        드론 착륙 명령 실행
+        
+        Returns:
+            tuple: (성공 여부, 메시지)
+        """
+        if not self.connected:
+            msg = "드론이 연결되지 않았습니다"
+            logger.error(f"착륙 실패: {msg}")
+            return False, msg
         
         try:
-            logger.info("🛬 착륙 시작...")
+            logger.info("착륙 명령 실행 중...")
             
-            # Olympe 공식 방식: assert를 사용한 명령 전송 및 대기
-            assert self.drone(
-                Landing()
-                >> FlyingStateChanged(state="landed", _timeout=10)
-            ).wait().success()
+            # 타임아웃 10초로 착륙 명령 실행
+            result = self.drone(Landing()).wait(_timeout=10)
             
-            logger.info("✅ 착륙 완료!")
-            return True
-            
-        except AssertionError:
-            logger.error("❌ 착륙 실패: 타임아웃 또는 명령 실패")
-            return False
+            if result.success():
+                msg = "착륙 명령이 성공했습니다"
+                logger.info(msg)
+                return True, msg
+            else:
+                msg = "착륙 명령이 실패했습니다"
+                logger.error(msg)
+                return False, msg
+                
         except Exception as e:
-            logger.error(f"❌ 착륙 실패: {e}")
-            return False
-    
-    def move_by(self, dx, dy, dz, dyaw):
-        """
-        상대 위치로 이동 (Olympe 공식 방식)
-        :param dx: 전진/후진 (미터, 양수=전진)
-        :param dy: 좌/우 (미터, 양수=오른쪽)
-        :param dz: 상승/하강 (미터, 양수=상승)
-        :param dyaw: 회전 (라디안, 양수=시계방향)
-        """
-        if not self.is_connected or self.drone is None:
-            logger.error("드론이 연결되지 않음")
-            return False
-        
-        try:
-            logger.info(f"📍 상대 이동: dx={dx}m, dy={dy}m, dz={dz}m, dyaw={dyaw}rad")
-            
-            # Olympe 공식 방식: moveBy 사용
-            assert self.drone(
-                moveBy(dx, dy, dz, dyaw)
-                >> FlyingStateChanged(state="hovering", _timeout=10)
-            ).wait().success()
-            
-            logger.info("✅ 이동 완료!")
-            return True
-            
-        except AssertionError:
-            logger.error("❌ 이동 실패: 타임아웃 또는 명령 실패")
-            return False
-        except Exception as e:
-            logger.error(f"❌ 이동 실패: {e}")
-            return False
-    
-    def start_mission(self, waypoints):
-        """
-        미션 시작 (간단한 데모)
-        :param waypoints: [{"lat": float, "lng": float, "alt": float}, ...]
-        """
-        if not self.is_connected or self.drone is None:
-            logger.error("드론이 연결되지 않음")
-            return False
-        
-        try:
-            logger.info("🚀 미션 시작!")
-            
-            # 이륙
-            if not self.takeoff():
-                return False
-            
-            time.sleep(2)  # 안정화 대기
-            
-            # 간단한 이동 데모 (상대 좌표)
-            logger.info("📍 전진 5m")
-            self.move_by(5, 0, 0, 0)
-            time.sleep(2)
-            
-            logger.info("📍 우측 3m")
-            self.move_by(0, 3, 0, 0)
-            time.sleep(2)
-            
-            logger.info("📍 상승 2m")
-            self.move_by(0, 0, 2, 0)
-            time.sleep(2)
-            
-            # 착륙
-            self.land()
-            
-            logger.info("✅ 미션 완료!")
-            return True
-            
-        except Exception as e:
-            logger.error(f"❌ 미션 실패: {e}")
-            # 비상 착륙 시도
-            try:
-                self.land()
-            except:
-                pass
-            return False
-
-
-if __name__ == "__main__":
-    # 테스트 코드
-    controller = DroneController()
-    
-    if controller.connect():
-        print("드론 연결 성공!")
-        status = controller.get_status()
-        print(f"드론 상태: {status}")
-        controller.disconnect()
-    else:
-        print("드론 연결 실패")
+            msg = f"착륙 실패: {str(e)}"
+            logger.error(msg)
+            return False, msg
