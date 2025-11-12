@@ -231,13 +231,28 @@ class DroneController:
         Returns:
             dict: 드론 상태 정보
         """
-        if not self.connected:
+        # 실제 연결 상태 확인
+        if not self.connected or self.drone is None:
             return {
                 "connected": False,
                 "battery": 0,
                 "gps": {"latitude": 0, "longitude": 0, "altitude": 0},
                 "flying": False
             }
+        
+        # Olympe 내부 연결 상태 확인
+        try:
+            if hasattr(self.drone, '_connected') and not self.drone._connected:
+                logger.warning("드론 연결이 끊어졌습니다")
+                self.connected = False
+                return {
+                    "connected": False,
+                    "battery": 0,
+                    "gps": {"latitude": 0, "longitude": 0, "altitude": 0},
+                    "flying": False
+                }
+        except Exception as e:
+            logger.debug(f"연결 상태 확인 실패: {e}")
         
         status = {
             "connected": True,
@@ -258,10 +273,28 @@ class DroneController:
             # 비행 상태
             flying_state = self.drone.get_state(FlyingStateChanged)
             if flying_state:
-                state = flying_state["state"]
-                status["flying"] = state in ["flying", "hovering", "takingoff"]
+                state = str(flying_state["state"]) if isinstance(flying_state, dict) else str(flying_state)
+                status["flying"] = "flying" in state.lower() or "hovering" in state.lower() or "takingoff" in state.lower()
         except Exception as e:
             logger.debug(f"비행 상태 조회 실패: {e}")
+        
+        try:
+            # GPS 위치 정보
+            from olympe.messages.ardrone3.PilotingState import PositionChanged
+            position = self.drone.get_state(PositionChanged)
+            if position:
+                if isinstance(position, dict):
+                    status["gps"]["latitude"] = float(position.get("latitude", 0))
+                    status["gps"]["longitude"] = float(position.get("longitude", 0))
+                    status["gps"]["altitude"] = float(position.get("altitude", 0))
+                elif hasattr(position, 'latitude'):
+                    status["gps"]["latitude"] = float(position.latitude)
+                    status["gps"]["longitude"] = float(position.longitude)
+                    status["gps"]["altitude"] = float(position.altitude)
+                
+                logger.debug(f"GPS: lat={status['gps']['latitude']}, lon={status['gps']['longitude']}, alt={status['gps']['altitude']}")
+        except Exception as e:
+            logger.debug(f"GPS 조회 실패: {e}")
         
         return status
 

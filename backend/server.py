@@ -101,9 +101,7 @@ def refresh_status():
     try:
         logger.info("🔄 수동 상태 갱신 요청")
         
-        # 캐시 강제 업데이트
-        drone._update_cached_status()
-        
+        # 상태 조회 (get_status가 최신 상태를 가져옴)
         status = drone.get_status()
         return jsonify(status)
     except Exception as e:
@@ -121,20 +119,6 @@ def refresh_status():
 def takeoff():
     """이륙"""
     try:
-        # 현재 상태 확인
-        current_status = drone.get_status()
-        if not current_status.get('connected'):
-            return jsonify({
-                'success': False,
-                'message': '드론이 연결되지 않았습니다'
-            }), 400
-        
-        if current_status.get('flying'):
-            return jsonify({
-                'success': False,
-                'message': '드론이 이미 비행 중입니다'
-            }), 400
-        
         logger.info("🚁 이륙 명령 실행...")
         success, message = drone.takeoff()
         
@@ -151,15 +135,6 @@ def takeoff():
 def land():
     """착륙"""
     try:
-        # 현재 상태 확인
-        current_status = drone.get_status()
-        if not current_status.get('connected'):
-            return jsonify({
-                'success': False,
-                'message': '드론이 연결되지 않았습니다'
-            }), 400
-        
-        # flying 상태 체크 제거 (상태 조회가 정확하지 않을 수 있음)
         logger.info("🛬 착륙 명령 실행...")
         success, message = drone.land()
         

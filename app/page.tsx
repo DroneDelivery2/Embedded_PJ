@@ -6,23 +6,45 @@ import styles from './page.module.css'
 import { droneApi } from '@/lib/droneApi'
 
 export default function Home() {
-  const [droneStatus, setDroneStatus] = useState('초기화 중...')
+  const [droneStatus, setDroneStatus] = useState('확인 중...')
   const [isConnected, setIsConnected] = useState(false)
   const [battery, setBattery] = useState(0)
   const [isConnecting, setIsConnecting] = useState(false)
+  const [isChecking, setIsChecking] = useState(true)
 
   useEffect(() => {
-    // 서버 연결 확인
-    checkServerConnection()
+    // 초기 상태 확인
+    initializeStatus()
   }, [])
 
-  const checkServerConnection = async () => {
+  const initializeStatus = async () => {
+    setIsChecking(true)
+    
+    // 1. 서버 연결 확인
     const isHealthy = await droneApi.healthCheck()
-    if (isHealthy) {
-      setDroneStatus('서버 연결됨 - 드론 연결 대기 중')
-    } else {
+    if (!isHealthy) {
       setDroneStatus('백엔드 서버 연결 실패')
+      setIsChecking(false)
+      return
     }
+    
+    // 2. 드론 상태 확인
+    try {
+      const status = await droneApi.getStatus()
+      if (status && status.connected) {
+        setIsConnected(true)
+        setBattery(status.battery)
+        setDroneStatus('드론 연결됨')
+      } else {
+        setIsConnected(false)
+        setDroneStatus('서버 연결됨 - 드론 연결 대기 중')
+      }
+    } catch (error) {
+      console.error('드론 상태 확인 실패:', error)
+      setDroneStatus('서버 연결됨 - 드론 연결 대기 중')
+    }
+    
+    setIsChecking(false)
   }
 
   const connectDrone = async () => {
@@ -108,7 +130,11 @@ export default function Home() {
         {isConnected && <p className={styles.battery}>🔋 배터리: {battery}%</p>}
         
         <div className={styles.btnGroup}>
-          {!isConnected ? (
+          {isChecking ? (
+            <button className={styles.connectBtn} disabled>
+              확인 중...
+            </button>
+          ) : !isConnected ? (
             <button 
               className={styles.connectBtn}
               onClick={connectDrone}
