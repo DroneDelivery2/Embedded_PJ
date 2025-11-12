@@ -1,0 +1,15 @@
+# WSL2 네트워크 설정 파일
+# 이 파일을 C:\Users\beaco\.wslconfig 로 복사하세요
+
+[wsl2]
+# 미러 네트워크 모드 활성화 (Windows 네트워크 직접 사용)
+networkingMode=mirrored
+
+# DNS 터널링 활성화
+dnsTunneling=true
+
+# 방화벽 활성화
+firewall=true
+
+# 자동 프록시 설정
+autoProxy=true

@@ -2,6 +2,13 @@
 
 Parrot Anafi 드론을 이용한 실시간 배송 시스템 (Progressive Web App)
 
+## ⚠️ Windows 사용자 필독!
+
+Olympe SDK는 Linux 전용입니다. Windows에서는 **WSL2 필수**
+
+**→ [WSL2 빠른 시작 가이드](QUICKSTART_WINDOWS.md)**
+**→ [WSL2 네트워크 문제 해결](FIX_WSL_NETWORK.md)**
+
 ## 🚀 빠른 시작
 
 ### 프론트엔드 (Next.js)
@@ -20,26 +27,41 @@ npm run dev
 # http://localhost:3000
 ```
 
-### 백엔드 (Python Flask)
+### 백엔드 (Python Flask + Olympe SDK)
+
+#### Linux/Mac 사용자
 
 ```bash
 # 1. backend 디렉토리로 이동
 cd backend
 
 # 2. Python 가상환경 생성
-python -m venv venv
+python3 -m venv venv
 
-# 3. 가상환경 활성화 (Windows)
-venv\Scripts\activate
+# 3. 가상환경 활성화
+source venv/bin/activate
 
 # 4. 의존성 설치
 pip install -r requirements.txt
 
 # 5. 서버 실행
 python server.py
-
-# 서버는 http://localhost:5000 에서 실행됩니다
 ```
+
+#### Windows 사용자 (WSL2)
+
+```bash
+# WSL Ubuntu에서
+cd /mnt/c/Users/[사용자명]/git/Embedded_PJ/backend
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+python server.py
+```
+
+**상세 가이드**: `backend/INSTALL_WSL.md`
+
+서버는 http://localhost:5000 에서 실행됩니다.
 
 ## 📦 기술 스택
 

@@ -1,29 +1,50 @@
+# ============================================
+# Node.js / Next.js
+# ============================================
+
 # dependencies
 /node_modules
 /.pnp
 .pnp.js
+node_modules/
+package-lock.json
 
 # testing
 /coverage
+*.test.js
+*.spec.js
 
 # next.js
 /.next/
 /out/
+.next/
+out/
 
 # production
 /build
+build/
+dist/
 
 # misc
 .DS_Store
 *.pem
+.vscode/
+.idea/
 
 # debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
 
 # local env files
+.env
 .env*.local
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 
 # vercel
 .vercel
@@ -40,7 +61,220 @@ public/sw.js.map
 public/workbox-*.js.map
 public/worker-*.js.map
 
+# ============================================
+# Python / Backend
+# ============================================
+
+# Python virtual environments
+venv/
+venv_windows/
+env/
+ENV/
+.venv/
+backend/venv/
+backend/venv_windows/
+backend/env/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Unit test / coverage
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Flask
+instance/
+.webassets-cache
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# poetry
+poetry.lock
+
+# ============================================
+# OS / System
+# ============================================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# ============================================
+# IDE / Editor
+# ============================================
+
+# VSCode
+.vscode/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# JetBrains (PyCharm, WebStorm, IntelliJ)
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+.idea_modules/
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+[._]*.s[a-v][a-z]
+[._]*.sw[a-p]
+[._]s[a-rt-v][a-z]
+[._]ss[a-gi-z]
+[._]sw[a-p]
+Session.vim
+Sessionx.vim
+.netrwhist
+tags
+[._]*.un~
+
+# ============================================
+# Docker
+# ============================================
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+
+# ============================================
+# Logs
+# ============================================
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# ============================================
+# Temporary files
+# ============================================
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+.cache/
+tmp/
+temp/
+
+# ============================================
+# Project specific
+# ============================================
+
+# 드론 관련 임시 파일
+*.drone
+*.flight
+
+# 테스트 스크립트
+test_*.py
+*_test.py
+
+# 백업 파일
+*.bak
+*.backup
+*.old
+
+# 문서 임시 파일
+~$*.doc*
+~$*.xls*
+~$*.ppt*
+
+# ============================================
 # Android (기존 프로젝트)
+# ============================================
+
 .gradle
 .idea
 local.properties
@@ -49,3 +283,46 @@ local.properties
 *.ap_
 *.dex
 build/
+
+# ============================================
+# 보안 / 민감 정보
+# ============================================
+
+# API Keys / Secrets
+.env
+.env.local
+.env.*.local
+secrets.json
+credentials.json
+*.key
+*.pem
+*.cert
+*.crt
+
+# SSH Keys
+id_rsa
+id_rsa.pub
+*.ppk
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# ============================================
+# 기타
+# ============================================
+
+# Archives
+*.zip
+*.tar
+*.tar.gz
+*.rar
+*.7z
+
+# Large files
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.iso

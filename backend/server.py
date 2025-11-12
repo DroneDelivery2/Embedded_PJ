@@ -6,8 +6,20 @@ Flask를 사용한 백엔드 서버
 
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-from drone_controller import DroneController
 import logging
+import os
+
+# 프록시 모드 확인
+USE_PROXY = os.getenv('USE_PROXY', 'false').lower() == 'true'
+
+if USE_PROXY:
+    from drone_controller_proxy import DroneController
+    logger = logging.getLogger(__name__)
+    logger.info("🔄 프록시 모드로 실행 (Windows 프록시 사용)")
+else:
+    from drone_controller import DroneController
+    logger = logging.getLogger(__name__)
+    logger.info("🚁 직접 모드로 실행 (Olympe SDK)")
 
 app = Flask(__name__)
 CORS(app)  # CORS 허용
@@ -23,19 +35,36 @@ drone = DroneController()
 def connect_drone():
     """드론 연결"""
     try:
-        data = request.json
+        data = request.json or {}
         drone_ip = data.get('ip', '192.168.42.1')
         
+        logger.info(f"드론 연결 요청: {drone_ip}")
+        
+        # 드론 IP 설정
         drone.drone_ip = drone_ip
+        
+        # 연결 시도
         success = drone.connect()
         
-        return jsonify({
-            'success': success,
-            'message': '드론 연결 성공' if success else '드론 연결 실패'
-        })
+        if success:
+            logger.info("드론 연결 성공!")
+            return jsonify({
+                'success': True,
+                'message': '드론 연결 성공'
+            })
+        else:
+            logger.error("드론 연결 실패")
+            return jsonify({
+                'success': False,
+                'message': '드론 연결 실패 - 드론 WiFi 연결을 확인하세요'
+            })
+            
     except Exception as e:
         logger.error(f"연결 오류: {e}")
-        return jsonify({'success': False, 'message': str(e)}), 500
+        return jsonify({
+            'success': False,
+            'message': f'연결 오류: {str(e)}'
+        }), 500
 
 
 @app.route('/api/drone/disconnect', methods=['POST'])
@@ -54,10 +83,24 @@ def get_status():
     """드론 상태 조회"""
     try:
         status = drone.get_status()
-        return jsonify(status)
+        if status:
+            return jsonify(status)
+        else:
+            return jsonify({
+                'connected': False,
+                'battery': 0,
+                'gps': {'latitude': 0, 'longitude': 0, 'altitude': 0},
+                'flying': False
+            })
     except Exception as e:
         logger.error(f"상태 조회 오류: {e}")
-        return jsonify({'connected': False, 'error': str(e)}), 500
+        return jsonify({
+            'connected': False,
+            'battery': 0,
+            'gps': {'latitude': 0, 'longitude': 0, 'altitude': 0},
+            'flying': False,
+            'error': str(e)
+        }), 500
 
 
 @app.route('/api/drone/takeoff', methods=['POST'])

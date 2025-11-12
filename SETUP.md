@@ -9,8 +9,8 @@
 
 ### 소프트웨어
 - Node.js 18+ 
-- Python 3.8+
-- pip (Python 패키지 관리자)
+- **Linux/Mac**: Python 3.8+, pip
+- **Windows**: WSL2 또는 Docker Desktop (필수!)
 
 ## 🔧 설치 단계
 
@@ -36,18 +36,33 @@ cp .env.example .env.local
 
 ### 3. 백엔드 설정
 
+#### ⚠️ Windows 사용자 (중요!)
+
+Parrot Olympe SDK는 Windows에서 직접 설치할 수 없습니다.
+다음 두 가지 방법 중 하나를 선택하세요:
+
+**방법 1: WSL2 사용 (권장)**
+- `backend/INSTALL_WSL.md` 파일 참조
+- Ubuntu 환경에서 실행
+
+**방법 2: Docker 사용**
+- `backend/INSTALL_DOCKER.md` 파일 참조
+- Docker Desktop 필요
+
+#### Linux/Mac 사용자
+
 ```bash
 # backend 디렉토리로 이동
 cd backend
 
 # Python 가상환경 생성
-python -m venv venv
+python3 -m venv venv
 
 # 가상환경 활성화
-# Windows:
-venv\Scripts\activate
-# Mac/Linux:
 source venv/bin/activate
+
+# pip 업그레이드
+pip install --upgrade pip
 
 # 의존성 설치
 pip install -r requirements.txt
@@ -55,8 +70,9 @@ pip install -r requirements.txt
 
 ### 4. Parrot Olympe SDK 설치 (중요!)
 
-Olympe SDK는 Linux/Mac에서 가장 잘 작동합니다. Windows 사용자는 WSL2를 사용하세요.
+Olympe SDK는 Linux/Mac에서만 작동합니다. Windows 사용자는 WSL2를 사용해야 합니다.
 
+#### Linux/Mac:
 ```bash
 # Ubuntu/Debian
 sudo apt-get update
@@ -66,13 +82,28 @@ sudo apt-get install python3-dev python3-pip
 pip install parrot-olympe
 ```
 
+#### Windows (WSL2 필요):
+```bash
+# WSL2 Ubuntu에서
+sudo apt-get update
+sudo apt-get install python3-dev python3-pip
+pip install parrot-olympe
+```
+
 ## 🚀 실행 방법
 
 ### 터미널 1: 백엔드 서버
 
 ```bash
 cd backend
-source venv/bin/activate  # Windows: venv\Scripts\activate
+
+# 가상환경 활성화
+# Windows (WSL2):
+source venv/bin/activate
+# Mac/Linux:
+source venv/bin/activate
+
+# 서버 실행
 python server.py
 ```
 
@@ -156,8 +187,9 @@ curl http://localhost:5000/api/drone/status
 
 ### Olympe SDK 설치 오류
 - Python 버전 확인 (3.8 이상)
-- Linux/Mac 환경 권장
+- Linux/Mac 환경 필수
 - Windows는 WSL2 사용 필수
+- `pip install --upgrade pip` 실행 후 재시도
 
 ### CORS 오류
 - 백엔드 서버가 실행 중인지 확인
