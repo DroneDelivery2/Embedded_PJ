@@ -23,8 +23,12 @@ export default function StatusPage() {
     setIsRefreshing(true)
     try {
       const data = await droneApi.getStatus()
+      console.log('상태 페이지 - 상태 조회:', data)
+      
       if (data) {
         setStatus(data)
+        console.log('상태 업데이트:', data)
+        
         if (data.connected) {
           if (data.flying) {
             setDroneState('비행 중')
@@ -34,8 +38,12 @@ export default function StatusPage() {
         } else {
           setDroneState('드론 연결 안됨')
         }
+      } else {
+        console.warn('상태 데이터 없음')
+        setDroneState('상태 조회 실패')
       }
     } catch (error) {
+      console.error('상태 조회 오류:', error)
       setDroneState('상태 조회 실패')
     } finally {
       setIsRefreshing(false)
@@ -70,26 +78,93 @@ export default function StatusPage() {
       </div>
 
       <div className={styles.banner}>
-        <p>{droneState}</p>
+        <div className={styles.statusMain}>
+          <span className={styles.statusIcon}>
+            {status?.flying ? '✈️' : status?.connected ? '🟢' : '🔴'}
+          </span>
+          <span className={styles.statusText}>{droneState}</span>
+        </div>
         {status && status.connected && (
-          <p className={styles.battery}>🔋 {status.battery}%</p>
+          <div className={styles.batteryInfo}>
+            <span className={styles.batteryIcon}>🔋</span>
+            <span className={styles.batteryPercent}>{status.battery}%</span>
+            <div className={styles.batteryBar}>
+              <div 
+                className={styles.batteryFill}
+                style={{ 
+                  width: `${status.battery}%`,
+                  backgroundColor: status.battery > 50 ? '#4CAF50' : status.battery > 20 ? '#FF9800' : '#F44336'
+                }}
+              />
+            </div>
+          </div>
         )}
       </div>
 
-      <div className={styles.card}>
-        <h2>드론 위치</h2>
-        <div className={styles.location}>
-          <p>위도: {status?.gps.latitude.toFixed(6) || '0.000000'}</p>
-          <p>경도: {status?.gps.longitude.toFixed(6) || '0.000000'}</p>
-          <p>고도: {status?.gps.altitude.toFixed(1) || '0.0'}m</p>
+      {status?.connected && (
+        <div className={styles.statsGrid}>
+          <div className={styles.statCard}>
+            <div className={styles.statIcon}>📍</div>
+            <div className={styles.statLabel}>위도</div>
+            <div className={styles.statValue}>
+              {status.gps.latitude.toFixed(6)}
+            </div>
+          </div>
+          <div className={styles.statCard}>
+            <div className={styles.statIcon}>📍</div>
+            <div className={styles.statLabel}>경도</div>
+            <div className={styles.statValue}>
+              {status.gps.longitude.toFixed(6)}
+            </div>
+          </div>
+          <div className={styles.statCard}>
+            <div className={styles.statIcon}>📏</div>
+            <div className={styles.statLabel}>고도</div>
+            <div className={styles.statValue}>
+              {status.gps.altitude.toFixed(1)}m
+            </div>
+          </div>
+          <div className={styles.statCard}>
+            <div className={styles.statIcon}>🔋</div>
+            <div className={styles.statLabel}>배터리</div>
+            <div className={styles.statValue}>
+              {status.battery}%
+            </div>
+          </div>
         </div>
-        <button 
-          className={styles.refreshBtn}
-          onClick={refreshStatus}
-          disabled={isRefreshing}
-        >
-          {isRefreshing ? '갱신 중...' : '위치 갱신'}
-        </button>
+      )}
+
+      <div className={styles.card}>
+        <div className={styles.cardHeader}>
+          <h2>드론 위치</h2>
+          <button 
+            className={styles.refreshBtn}
+            onClick={refreshStatus}
+            disabled={isRefreshing}
+          >
+            {isRefreshing ? '🔄 갱신 중...' : '🔄 새로고침'}
+          </button>
+        </div>
+        <div className={styles.location}>
+          <div className={styles.locationItem}>
+            <span className={styles.locationLabel}>위도:</span>
+            <span className={styles.locationValue}>
+              {status?.gps.latitude.toFixed(6) || '0.000000'}
+            </span>
+          </div>
+          <div className={styles.locationItem}>
+            <span className={styles.locationLabel}>경도:</span>
+            <span className={styles.locationValue}>
+              {status?.gps.longitude.toFixed(6) || '0.000000'}
+            </span>
+          </div>
+          <div className={styles.locationItem}>
+            <span className={styles.locationLabel}>고도:</span>
+            <span className={styles.locationValue}>
+              {status?.gps.altitude.toFixed(1) || '0.0'}m
+            </span>
+          </div>
+        </div>
       </div>
 
       {status?.connected && (
@@ -97,18 +172,22 @@ export default function StatusPage() {
           <h2>드론 제어</h2>
           <div className={styles.controls}>
             <button 
-              className={styles.controlBtn}
+              className={`${styles.controlBtn} ${styles.takeoffBtn}`}
               onClick={handleTakeoff}
               disabled={status.flying}
             >
-              🚁 이륙
+              <span className={styles.controlIcon}>🚁</span>
+              <span className={styles.controlText}>이륙</span>
+              {status.flying && <span className={styles.disabledText}>(비행 중)</span>}
             </button>
             <button 
-              className={styles.controlBtn}
+              className={`${styles.controlBtn} ${styles.landBtn}`}
               onClick={handleLand}
               disabled={!status.flying}
             >
-              🛬 착륙
+              <span className={styles.controlIcon}>🛬</span>
+              <span className={styles.controlText}>착륙</span>
+              {!status.flying && <span className={styles.disabledText}>(지상)</span>}
             </button>
           </div>
         </div>

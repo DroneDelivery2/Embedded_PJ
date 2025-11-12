@@ -6,11 +6,10 @@ export const metadata: Metadata = {
   description: 'Parrot Anafi 드론 배송 시스템',
   manifest: '/manifest.json',
   themeColor: '#2962FF',
-  viewport: 'width=device-width, initial-scale=1, maximum-scale=1',
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: 'default',
-    title: 'DroneDelivery'
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 1
   }
 }
 

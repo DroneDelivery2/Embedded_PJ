@@ -32,14 +32,16 @@ class DroneAPI {
   /**
    * 드론 연결
    */
-  async connect(ip: string = '192.168.42.1'): Promise<{ success: boolean; message: string }> {
+  async connect(ip: string = '192.168.42.1'): Promise<{ success: boolean; message: string; status?: DroneStatus }> {
     try {
       const response = await fetch(`${this.baseUrl}/api/drone/connect`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ip })
       });
-      return await response.json();
+      const data = await response.json();
+      console.log('API 연결 응답:', data);
+      return data;
     } catch (error) {
       console.error('드론 연결 오류:', error);
       return { success: false, message: '서버 연결 실패' };

@@ -31,21 +31,34 @@ export default function Home() {
     
     try {
       const result = await droneApi.connect()
+      console.log('연결 결과:', result)
       
       if (result.success) {
         setIsConnected(true)
         setDroneStatus('드론 연결 성공!')
         
-        // 드론 상태 조회
-        const status = await droneApi.getStatus()
-        if (status) {
-          setBattery(status.battery)
+        // 연결 응답에 포함된 상태 정보 사용
+        if (result.status && result.status.connected) {
+          setBattery(result.status.battery)
+          console.log('연결 응답에서 배터리 업데이트:', result.status.battery)
+        } else {
+          // 상태 정보가 없으면 별도 조회
+          await new Promise(resolve => setTimeout(resolve, 1000))
+          
+          const status = await droneApi.getStatus()
+          console.log('별도 상태 조회 결과:', status)
+          
+          if (status && status.connected) {
+            setBattery(status.battery)
+            console.log('배터리 업데이트:', status.battery)
+          }
         }
       } else {
         setIsConnected(false)
         setDroneStatus(`드론 연결 실패: ${result.message}`)
       }
     } catch (error) {
+      console.error('연결 오류:', error)
       setIsConnected(false)
       setDroneStatus('드론 연결 오류')
     } finally {
@@ -67,8 +80,15 @@ export default function Home() {
   const testConnection = async () => {
     if (isConnected) {
       const status = await droneApi.getStatus()
-      if (status) {
-        alert(`✅ Parrot Anafi 드론 연결됨!\n배터리: ${status.battery}%\n위치: ${status.gps.latitude.toFixed(6)}, ${status.gps.longitude.toFixed(6)}`)
+      console.log('테스트 상태:', status)
+      
+      if (status && status.connected) {
+        alert(`✅ Parrot Anafi 드론 연결됨!\n배터리: ${status.battery}%\n위치: ${status.gps.latitude.toFixed(6)}, ${status.gps.longitude.toFixed(6)}\n고도: ${status.gps.altitude.toFixed(1)}m`)
+        
+        // UI 업데이트
+        setBattery(status.battery)
+      } else {
+        alert('❌ 상태 정보를 가져올 수 없습니다.')
       }
     } else {
       alert('❌ 드론을 찾을 수 없습니다.\n드론을 켜고 WiFi에 연결하세요.')

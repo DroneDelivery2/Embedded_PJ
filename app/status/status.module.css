@@ -89,24 +89,165 @@
   margin-right: 8px;
 }
 
-.battery {
+.statusMain {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-content: center;
+}
+
+.statusIcon {
+  font-size: 32px;
+}
+
+.statusText {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.batteryInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  justify-content: center;
+}
+
+.batteryIcon {
+  font-size: 20px;
+}
+
+.batteryPercent {
+  font-size: 18px;
+  font-weight: 600;
+  min-width: 50px;
+}
+
+.batteryBar {
+  width: 120px;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.batteryFill {
+  height: 100%;
+  transition: width 0.3s ease, background-color 0.3s ease;
+  border-radius: 4px;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.statCard {
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  text-align: center;
+}
+
+.statIcon {
+  font-size: 32px;
+  margin-bottom: 8px;
+}
+
+.statLabel {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 4px;
+}
+
+.statValue {
   font-size: 16px;
-  margin-top: 8px;
-  opacity: 0.9;
+  font-weight: 600;
+  color: #333;
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.cardHeader h2 {
+  margin: 0;
+}
+
+.locationItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  background: #f5f5f7;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.locationLabel {
+  font-size: 14px;
+  color: #666;
+  font-weight: 500;
+}
+
+.locationValue {
+  font-size: 16px;
+  color: #333;
+  font-weight: 600;
+  font-family: 'Courier New', monospace;
+}
+
+.controlIcon {
+  font-size: 24px;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.controlText {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.disabledText {
+  font-size: 11px;
+  color: #999;
+  display: block;
+  margin-top: 4px;
+}
+
+.takeoffBtn:not(:disabled) {
+  background: #4CAF50;
+}
+
+.takeoffBtn:not(:disabled):hover {
+  background: #45a049;
+}
+
+.landBtn:not(:disabled) {
+  background: #2196F3;
+}
+
+.landBtn:not(:disabled):hover {
+  background: #0b7dda;
 }
 
 .refreshBtn {
-  width: 100%;
-  padding: 12px;
+  padding: 8px 16px;
   background: #2962FF;
   color: white;
   border: none;
-  border-radius: 8px;
-  font-size: 14px;
+  border-radius: 6px;
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  margin-top: 12px;
   transition: background 0.2s;
+  white-space: nowrap;
 }
 
 .refreshBtn:hover:not(:disabled) {
@@ -116,6 +257,7 @@
 .refreshBtn:disabled {
   background: #ccc;
   cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .controls {
@@ -125,22 +267,29 @@
 }
 
 .controlBtn {
-  padding: 16px;
+  padding: 20px;
   background: #4CAF50;
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: 12px;
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100px;
 }
 
 .controlBtn:hover:not(:disabled) {
-  background: #45a049;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .controlBtn:disabled {
   background: #ccc;
   cursor: not-allowed;
+  opacity: 0.6;
 }
