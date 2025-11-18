@@ -107,18 +107,18 @@ class DroneAPI {
   }
 
   /**
-   * 지정 위치로 이동
+   * GPS 좌표로 이동 (안전 고도 자동 계산: max(출발지, 도착지) + 3m)
    */
-  async moveTo(latitude: number, longitude: number, altitude: number = 10): Promise<{ success: boolean; message: string }> {
+  async moveToGPS(latitude: number, longitude: number, destAltitude: number = 0): Promise<{ success: boolean; message: string }> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/drone/move`, {
+      const response = await fetch(`${this.baseUrl}/api/drone/move-gps`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ latitude, longitude, altitude })
+        body: JSON.stringify({ latitude, longitude, altitude: destAltitude })
       });
       return await response.json();
     } catch (error) {
-      console.error('이동 오류:', error);
+      console.error('GPS 이동 오류:', error);
       return { success: false, message: '서버 연결 실패' };
     }
   }

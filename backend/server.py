@@ -12,11 +12,7 @@ import logging
 app = Flask(__name__)
 
 # CORS 설정 - 모든 origin 허용
-CORS(app, 
-     resources={r"/api/*": {"origins": "*"}},
-     allow_headers=["Content-Type"],
-     methods=["GET", "POST", "OPTIONS"],
-     supports_credentials=False)
+CORS(app)
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -153,50 +149,35 @@ def land():
         return jsonify({'success': False, 'message': str(e)}), 500
 
 
-@app.route('/api/drone/move', methods=['POST'])
-def move_by():
-    """상대 위치로 이동"""
+
+
+
+@app.route('/api/drone/move-gps', methods=['POST'])
+def move_to_gps():
+    """GPS 좌표로 이동 (안전 고도 자동 계산)"""
     try:
         data = request.json or {}
         
-        # 현재 상태 확인
-        current_status = drone.get_status()
-        if not current_status.get('connected'):
+        latitude = data.get('latitude')
+        longitude = data.get('longitude')
+        dest_altitude = data.get('altitude', 0)  # 도착지 고도 (기본값 0)
+        
+        if latitude is None or longitude is None:
             return jsonify({
                 'success': False,
-                'message': '드론이 연결되지 않았습니다'
+                'message': '위도와 경도를 입력하세요'
             }), 400
         
-        if not current_status.get('flying'):
-            return jsonify({
-                'success': False,
-                'message': '드론이 비행 중이 아닙니다. 먼저 이륙하세요.'
-            }), 400
+        logger.info(f"📍 GPS 이동 명령: 위도={latitude}, 경도={longitude}, 도착지 고도={dest_altitude}m")
         
-        # 상대 좌표 가져오기
-        dx = data.get('dx', 0)
-        dy = data.get('dy', 0)
-        dz = data.get('dz', 0)
-        dyaw = data.get('dyaw', 0)
-        
-        logger.info(f"📍 이동 명령: dx={dx}m, dy={dy}m, dz={dz}m, dyaw={dyaw}rad")
-        
-        success = drone.move_by(dx, dy, dz, dyaw)
-        
-        # 이동 후 상태 업데이트
-        if success:
-            import time
-            time.sleep(1)
-            new_status = drone.get_status()
-            logger.info(f"✅ 이동 완료! 위치: {new_status['gps']['latitude']:.6f}, {new_status['gps']['longitude']:.6f}")
+        success, message = drone.move_to_gps(latitude, longitude, dest_altitude)
         
         return jsonify({
             'success': success,
-            'message': '이동 성공' if success else '이동 실패',
-            'status': drone.get_status()  # 최신 상태 반환
+            'message': message
         })
     except Exception as e:
-        logger.error(f"❌ 이동 오류: {e}")
+        logger.error(f"❌ GPS 이동 오류: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
 
@@ -250,36 +231,6 @@ def health_check():
 
 
 # 실내 배송 테스트 엔드포인트
-@app.route('/api/delivery/indoor', methods=['POST', 'OPTIONS'])
-def start_delivery_indoor():
-    """실내 배송 테스트 (상대 좌표 이동)"""
-    # OPTIONS 요청 처리 (CORS preflight)
-    if request.method == 'OPTIONS':
-        return '', 200
-    
-    logger.info("실내 배송 테스트 요청 수신")
-    
-    try:
-        data = request.json or {}
-        distance = data.get('distance', 2.0)  # 기본 2m
-            
-        logger.info(f"실내 배송 테스트 시작: {distance}m 왕복")
-        
-        success, message = drone.start_delivery_indoor(distance)
-        
-        return jsonify({
-            'success': success,
-            'message': message
-        })
-            
-    except Exception as e:
-        logger.error(f"실내 배송 테스트 오류: {e}")
-        return jsonify({
-            'success': False,
-            'message': str(e)
-        }), 500
-
-
 # 실외 배송 시작 엔드포인트 (GPS)
 @app.route('/api/delivery/start', methods=['POST', 'OPTIONS'])
 def start_delivery():
@@ -296,7 +247,7 @@ def start_delivery():
         origin_lng = data.get('origin_lng')
         dest_lat = data.get('dest_lat')
         dest_lng = data.get('dest_lng')
-        altitude = data.get('altitude', 10)
+        altitude = data.get('altitude', 3)  # 기본 고도 3m
         
         if not all([origin_lat, origin_lng, dest_lat, dest_lng]):
             return jsonify({

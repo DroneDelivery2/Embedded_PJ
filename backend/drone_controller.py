@@ -5,7 +5,7 @@ Olympe SDK를 사용한 드론 연결 및 제어
 """
 
 import olympe
-from olympe.messages.ardrone3.Piloting import TakeOff, Landing, moveTo, moveBy
+from olympe.messages.ardrone3.Piloting import TakeOff, Landing, moveTo
 from olympe.messages.ardrone3.PilotingState import FlyingStateChanged, AlertStateChanged, PositionChanged
 from olympe.messages.ardrone3.GPSSettingsState import GPSFixStateChanged
 from olympe.messages.common.CommonState import BatteryStateChanged
@@ -324,52 +324,14 @@ class DroneController:
             logger.error(f"위치 조회 실패: {str(e)}")
             return None
     
-    def move_by_relative(self, dx, dy, dz, dyaw):
+
+    def move_to_gps(self, latitude, longitude, dest_altitude):
         """
-        상대 좌표로 드론 이동 (실내 테스트용)
-        Args:
-            dx: 전진/후진 (미터, 양수=전진)
-            dy: 좌/우 (미터, 양수=오른쪽)
-            dz: 상승/하강 (미터, 양수=상승)
-            dyaw: 회전 (라디안, 양수=시계방향)
-        Returns:
-            tuple: (성공 여부, 메시지)
-        """
-        if not self.connected:
-            msg = "드론이 연결되지 않았습니다"
-            logger.error(f"이동 실패: {msg}")
-            return False, msg
-        
-        try:
-            logger.info(f"상대 이동 시작: dx={dx}m, dy={dy}m, dz={dz}m, dyaw={dyaw}rad")
-            
-            # moveBy 명령 사용 (상대 좌표 이동)
-            result = self.drone(
-                moveBy(dx, dy, dz, dyaw)
-            ).wait(_timeout=30)
-            
-            if result.success():
-                msg = f"이동 완료"
-                logger.info(msg)
-                return True, msg
-            else:
-                msg = "이동 실패"
-                logger.error(msg)
-                return False, msg
-                
-        except Exception as e:
-            msg = f"이동 실패: {str(e)}"
-            logger.error(msg)
-            logger.exception("상대 이동 예외 발생:")
-            return False, msg
-    
-    def move_to_gps(self, latitude, longitude, altitude):
-        """
-        GPS 좌표로 드론 이동
+        GPS 좌표로 드론 이동 (안전 고도 자동 계산)
         Args:
             latitude: 목표 위도
             longitude: 목표 경도
-            altitude: 목표 고도 (미터)
+            dest_altitude: 도착지 고도 (미터)
         Returns:
             tuple: (성공 여부, 메시지)
         """
@@ -379,16 +341,31 @@ class DroneController:
             return False, msg
         
         try:
-            logger.info(f"GPS 이동 시작: 위도={latitude}, 경도={longitude}, 고도={altitude}m")
+            # 현재 위치 고도 가져오기
+            current_position = self.get_current_position()
+            if current_position:
+                current_altitude = current_position['altitude']
+            else:
+                current_altitude = 0
+                logger.warning("현재 고도를 가져올 수 없습니다. 0으로 가정합니다.")
+            
+            # 안전 비행 고도: 3m 고정 (낮은 고도로 안전하게 비행)
+            safe_altitude = 3
+            
+            logger.info(f"GPS 이동 시작:")
+            logger.info(f"  - 목표: 위도={latitude}, 경도={longitude}")
+            logger.info(f"  - 현재 고도: {current_altitude}m")
+            logger.info(f"  - 도착지 고도: {dest_altitude}m")
+            logger.info(f"  - 안전 비행 고도: {safe_altitude}m (장애물 회피)")
             
             # moveTo 명령 사용 (GPS 좌표로 이동)
             # orientation_mode: 0=TO_TARGET (목표 방향), 1=HEADING_START, 2=HEADING_DURING
             result = self.drone(
-                moveTo(latitude, longitude, altitude, 0, 0)
+                moveTo(latitude, longitude, safe_altitude, 0, 0)
             ).wait(_timeout=60)
             
             if result.success():
-                msg = f"목표 지점 도착 완료"
+                msg = f"목표 지점 도착 완료 (비행 고도: {safe_altitude}m)"
                 logger.info(msg)
                 return True, msg
             else:
@@ -402,92 +379,8 @@ class DroneController:
             logger.exception("GPS 이동 예외 발생:")
             return False, msg
     
-    def start_delivery_indoor(self, distance=2.0):
-        """
-        실내 배송 테스트 (상대 좌표 이동)
-        Args:
-            distance: 이동 거리 (미터, 기본 2m)
-        Returns:
-            tuple: (성공 여부, 메시지)
-        """
-        if not self.connected:
-            return False, "드론이 연결되지 않았습니다"
-        
-        try:
-            logger.info("=" * 60)
-            logger.info("실내 배송 테스트 시작")
-            logger.info(f"이동 거리: {distance}m (왕복)")
-            logger.info("=" * 60)
-            
-            # 1. 이륙 (site 1)
-            logger.info("[1/5] Site 1에서 이륙 중...")
-            success, msg = self.takeoff()
-            if not success:
-                return False, f"이륙 실패: {msg}"
-            
-            time.sleep(3)  # 안정화 대기
-            
-            # 2. 전진 (site 2로)
-            logger.info(f"[2/5] Site 2로 전진 중... ({distance}m)")
-            success, msg = self.move_by_relative(distance, 0, 0, 0)  # dx=2m 전진
-            if not success:
-                logger.warning(f"이동 실패: {msg}, 착륙 시도...")
-                self.land()
-                return False, f"Site 2 이동 실패: {msg}"
-            
-            time.sleep(2)  # 안정화 대기
-            
-            # 3. Site 2에서 착륙
-            logger.info("[3/5] Site 2에서 착륙 중...")
-            success, msg = self.land()
-            if not success:
-                return False, f"Site 2 착륙 실패: {msg}"
-            
-            time.sleep(5)  # 착륙 후 대기 (배송 완료)
-            
-            # 4. 재이륙 (site 2)
-            logger.info("[4/5] Site 2에서 재이륙 중...")
-            success, msg = self.takeoff()
-            if not success:
-                return False, f"재이륙 실패: {msg}"
-            
-            time.sleep(3)  # 안정화 대기
-            
-            # 5. 후진 (site 1로 복귀)
-            logger.info(f"[5/5] Site 1로 복귀 중... ({distance}m 후진)")
-            success, msg = self.move_by_relative(-distance, 0, 0, 0)  # dx=-2m 후진
-            if not success:
-                logger.warning(f"복귀 실패: {msg}, 현재 위치에서 착륙 시도...")
-                self.land()
-                return False, f"Site 1 복귀 실패: {msg}"
-            
-            time.sleep(2)  # 안정화 대기
-            
-            # 6. Site 1에서 최종 착륙
-            logger.info("[최종] Site 1에서 착륙 중...")
-            success, msg = self.land()
-            if not success:
-                return False, f"최종 착륙 실패: {msg}"
-            
-            logger.info("=" * 60)
-            logger.info("실내 배송 테스트 완료! (왕복 완료)")
-            logger.info("=" * 60)
-            
-            return True, "실내 배송 테스트 완료 (왕복 완료)"
-            
-        except Exception as e:
-            msg = f"실내 배송 테스트 실패: {str(e)}"
-            logger.error(msg)
-            logger.exception("실내 배송 테스트 예외 발생:")
-            # 비상 착륙 시도
-            try:
-                logger.warning("비상 착륙 시도...")
-                self.land()
-            except:
-                pass
-            return False, msg
-    
-    def start_delivery(self, origin_lat, origin_lng, dest_lat, dest_lng, altitude=10):
+
+    def start_delivery(self, origin_lat, origin_lng, dest_lat, dest_lng, altitude=3):
         """
         배송 미션 시작 (이륙 → 목적지 이동 → 착륙 → 재이륙 → 출발지 복귀)
         Args:
@@ -520,7 +413,7 @@ class DroneController:
             
             # 2. 목적지로 이동
             logger.info("[2/5] 목적지로 이동 중...")
-            success, msg = self.move_to_gps(dest_lat, dest_lng, altitude)
+            success, msg = self.move_to_gps(dest_lat, dest_lng, 0)  # 도착지 고도 0 (지상)
             if not success:
                 logger.warning(f"이동 실패: {msg}, 착륙 시도...")
                 self.land()
@@ -546,7 +439,7 @@ class DroneController:
             
             # 5. 출발지로 복귀 (Return to Home)
             logger.info("[5/5] 출발지로 복귀 중...")
-            success, msg = self.move_to_gps(origin_lat, origin_lng, altitude)
+            success, msg = self.move_to_gps(origin_lat, origin_lng, 0)  # 출발지 고도 0 (지상)
             if not success:
                 logger.warning(f"복귀 실패: {msg}, 현재 위치에서 착륙 시도...")
                 self.land()
