@@ -10,7 +10,13 @@ from drone_controller import DroneController
 import logging
 
 app = Flask(__name__)
-CORS(app)  # CORS 허용
+
+# CORS 설정 - 모든 origin 허용
+CORS(app, 
+     resources={r"/api/*": {"origins": "*"}},
+     allow_headers=["Content-Type"],
+     methods=["GET", "POST", "OPTIONS"],
+     supports_credentials=False)
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -241,6 +247,80 @@ def health_check():
         'drone_connected': drone_status.get('connected', False),
         'drone_battery': drone_status.get('battery', 0)
     })
+
+
+# 실내 배송 테스트 엔드포인트
+@app.route('/api/delivery/indoor', methods=['POST', 'OPTIONS'])
+def start_delivery_indoor():
+    """실내 배송 테스트 (상대 좌표 이동)"""
+    # OPTIONS 요청 처리 (CORS preflight)
+    if request.method == 'OPTIONS':
+        return '', 200
+    
+    logger.info("실내 배송 테스트 요청 수신")
+    
+    try:
+        data = request.json or {}
+        distance = data.get('distance', 2.0)  # 기본 2m
+            
+        logger.info(f"실내 배송 테스트 시작: {distance}m 왕복")
+        
+        success, message = drone.start_delivery_indoor(distance)
+        
+        return jsonify({
+            'success': success,
+            'message': message
+        })
+            
+    except Exception as e:
+        logger.error(f"실내 배송 테스트 오류: {e}")
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+
+# 실외 배송 시작 엔드포인트 (GPS)
+@app.route('/api/delivery/start', methods=['POST', 'OPTIONS'])
+def start_delivery():
+    """실외 배송 미션 시작 (GPS 좌표)"""
+    # OPTIONS 요청 처리 (CORS preflight)
+    if request.method == 'OPTIONS':
+        return '', 200
+    
+    logger.info("실외 배송 시작 요청 수신")
+    
+    try:
+        data = request.json or {}
+        origin_lat = data.get('origin_lat')
+        origin_lng = data.get('origin_lng')
+        dest_lat = data.get('dest_lat')
+        dest_lng = data.get('dest_lng')
+        altitude = data.get('altitude', 10)
+        
+        if not all([origin_lat, origin_lng, dest_lat, dest_lng]):
+            return jsonify({
+                'success': False,
+                'message': '출발지와 도착지 좌표가 필요합니다'
+            }), 400
+        
+        logger.info(f"실외 배송 시작: ({origin_lat}, {origin_lng}) → ({dest_lat}, {dest_lng})")
+        
+        success, message = drone.start_delivery(
+            origin_lat, origin_lng, dest_lat, dest_lng, altitude
+        )
+        
+        return jsonify({
+            'success': success,
+            'message': message
+        })
+            
+    except Exception as e:
+        logger.error(f"실외 배송 시작 오류: {e}")
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
 
 
 if __name__ == '__main__':

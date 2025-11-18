@@ -25,8 +25,8 @@ export default function RequestPage() {
     { name: 'site 2', lat: 37.5675, lng: 126.9790, alt: 10 },
     { name: 'site 3', lat: 37.5685, lng: 126.9800, alt: 10 },
     { name: 'site 4', lat: 37.5695, lng: 126.9810, alt: 10 },
-    { name: 'N4동 5층 옥상', lat: 37.5705, lng: 126.9820, alt: 15 },
-    { name: 'XXX 우체국', lat: 37.5715, lng: 126.9830, alt: 10 }
+    { name: 'N4동 5층 옥상', lat: 36.352150, lng: 127.301305, alt: 134.2 },
+    { name: 'N4동 6층 옥상', lat: 36.352126, lng: 127.301347, alt: 129.6 }
   ]
 
   const handleStartDelivery = async () => {
@@ -37,21 +37,44 @@ export default function RequestPage() {
 
     setIsStarting(true)
 
+    // site 1, 2 선택 시 실내 모드
+    const isIndoorMode = (origin.name === 'site 1' && destination.name === 'site 2') ||
+                         (origin.name === 'site 2' && destination.name === 'site 1')
+
     try {
-      // 웨이포인트 생성
-      const waypoints: Waypoint[] = [
-        { lat: origin.lat, lng: origin.lng, alt: origin.alt },
-        { lat: destination.lat, lng: destination.lng, alt: destination.alt }
-      ]
+      let response
 
-      // 미션 시작
-      const result = await droneApi.startMission(waypoints)
+      if (isIndoorMode) {
+        // 실내 모드: 상대 좌표 이동 (2m 왕복)
+        alert('실내 모드: 2m 왕복 테스트를 시작합니다')
+        response = await fetch('http://localhost:5000/api/delivery/indoor', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ distance: 2.0 })
+        })
+      } else {
+        // 실외 모드: GPS 좌표 이동
+        alert('실외 모드: GPS 배송을 시작합니다')
+        response = await fetch('http://localhost:5000/api/delivery/start', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            origin_lat: origin.lat,
+            origin_lng: origin.lng,
+            dest_lat: destination.lat,
+            dest_lng: destination.lng,
+            altitude: destination.alt
+          })
+        })
+      }
 
-      if (result.success) {
+      const data = await response.json()
+
+      if (data.success) {
         alert('배송이 시작되었습니다!')
         router.push('/status')
       } else {
-        alert(`배송 시작 실패: ${result.message}`)
+        alert(`배송 시작 실패: ${data.message}`)
       }
     } catch (error) {
       alert('배송 시작 중 오류가 발생했습니다.')
