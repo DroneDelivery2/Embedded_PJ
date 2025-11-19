@@ -149,6 +149,22 @@ def land():
         return jsonify({'success': False, 'message': str(e)}), 500
 
 
+@app.route('/api/drone/emergency-land', methods=['POST'])
+def emergency_land():
+    """비상 착륙"""
+    try:
+        logger.warning("🚨 비상 착륙 명령 실행!")
+        success, message = drone.emergency_land()
+        
+        return jsonify({
+            'success': success,
+            'message': message
+        })
+    except Exception as e:
+        logger.error(f"❌ 비상 착륙 오류: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
 
 
 

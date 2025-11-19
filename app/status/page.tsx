@@ -9,6 +9,7 @@ export default function StatusPage() {
   const [droneState, setDroneState] = useState('대기 중')
   const [status, setStatus] = useState<DroneStatus | null>(null)
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [isEmergencyLanding, setIsEmergencyLanding] = useState(false)
 
   useEffect(() => {
     // 초기 상태 조회만 (자동 갱신 제거)
@@ -47,6 +48,31 @@ export default function StatusPage() {
       setDroneState('상태 조회 실패')
     } finally {
       setIsRefreshing(false)
+    }
+  }
+
+  const handleEmergencyLand = async () => {
+    if (!confirm('🚨 비상 착륙을 실행하시겠습니까?\n드론이 즉시 착륙합니다!')) {
+      return
+    }
+
+    setIsEmergencyLanding(true)
+    try {
+      const response = await fetch('http://localhost:5000/api/drone/emergency-land', {
+        method: 'POST'
+      })
+      const data = await response.json()
+      
+      if (data.success) {
+        alert('✅ 비상 착륙 명령을 전송했습니다!')
+        await refreshStatus()
+      } else {
+        alert(`❌ 비상 착륙 실패: ${data.message}`)
+      }
+    } catch (error) {
+      alert('❌ 서버 연결 실패')
+    } finally {
+      setIsEmergencyLanding(false)
     }
   }
 
@@ -159,6 +185,27 @@ export default function StatusPage() {
           <p><strong>상태:</strong> {droneState}</p>
         </div>
       </div>
+
+      {status?.connected && (
+        <div className={styles.emergencyCard}>
+          <h2>🚨 비상 제어</h2>
+          <p className={styles.emergencyWarning}>
+            드론이 위험한 방향으로 이동하거나 문제가 발생하면 즉시 비상 착륙을 실행하세요.
+          </p>
+          <button
+            className={styles.emergencyBtn}
+            onClick={handleEmergencyLand}
+            disabled={isEmergencyLanding || !status.flying}
+          >
+            {isEmergencyLanding ? '🚨 비상 착륙 중...' : '🚨 비상 착륙'}
+          </button>
+          {!status.flying && (
+            <p className={styles.emergencyNote}>
+              * 드론이 비행 중일 때만 사용 가능합니다
+            </p>
+          )}
+        </div>
+      )}
     </main>
   )
 }

@@ -25,8 +25,8 @@ export default function RequestPage() {
     { name: 'site 2', lat: 37.5675, lng: 126.9790, alt: 10 },
     { name: 'site 3', lat: 37.5685, lng: 126.9800, alt: 10 },
     { name: 'site 4', lat: 37.5695, lng: 126.9810, alt: 10 },
-    { name: 'N4동 5층 옥상', lat: 36.352590, lng: 127.301334, alt: 126.1 },
-    { name: 'N4동 6층 옥상', lat: 36.352093, lng: 127.301639, alt: 118.0 }
+    { name: 'N4동 5층 옥상', lat: 36.35154, lng: 127.30005, alt: 121.4 },
+    { name: 'N4동 6층 옥상', lat: 36.35163, lng: 127.29989, alt: 117.7 }
   ]
 
   const handleStartDelivery = async () => {

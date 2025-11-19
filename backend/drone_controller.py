@@ -28,6 +28,7 @@ class DroneController:
         self.drone_ip = drone_ip
         self.drone = olympe.Drone(drone_ip)
         self.connected = False
+        self.emergency_stop = False  # 비상 정지 플래그
         logger.info(f"DroneController 초기화 완료 (IP: {drone_ip})")
     
     def connect(self):
@@ -225,6 +226,27 @@ class DroneController:
             logger.exception("착륙 명령 예외 발생:")
             return False, msg
     
+    def emergency_land(self):
+        """
+        비상 착륙 (즉시 착륙)
+        Returns:
+            tuple: (성공 여부, 메시지)
+        """
+        logger.warning("🚨 비상 착륙 명령 실행!")
+        self.emergency_stop = True
+        
+        if not self.connected:
+            return False, "드론이 연결되지 않았습니다"
+        
+        try:
+            # 즉시 착륙 명령
+            self.drone(Landing())
+            logger.info("비상 착륙 명령 전송 완료")
+            return True, "비상 착륙 명령을 전송했습니다"
+        except Exception as e:
+            logger.error(f"비상 착륙 실패: {e}")
+            return False, f"비상 착륙 실패: {str(e)}"
+    
     def get_status(self):
         """
         드론 상태 조회 (간단한 버전)
@@ -359,7 +381,7 @@ class DroneController:
             logger.info(f"  - 안전 비행 고도: {safe_altitude}m (장애물 회피)")
             
             # moveTo 명령 사용 (GPS 좌표로 이동)
-            # orientation_mode: 0=TO_TARGET (목표 방향), 1=HEADING_START, 2=HEADING_DURING
+            # orientation_mode: 0=TO_TARGET (목표 방향으로 자동)
             result = self.drone(
                 moveTo(latitude, longitude, safe_altitude, 0, 0)
             ).wait(_timeout=60)
@@ -395,6 +417,9 @@ class DroneController:
         if not self.connected:
             return False, "드론이 연결되지 않았습니다"
         
+        # 비상 정지 플래그 초기화
+        self.emergency_stop = False
+        
         try:
             logger.info("=" * 60)
             logger.info("배송 미션 시작")
@@ -411,15 +436,57 @@ class DroneController:
             
             time.sleep(3)  # 안정화 대기
             
+            # 비상 정지 체크
+            if self.emergency_stop:
+                logger.warning("🚨 비상 정지 감지! 착륙합니다.")
+                self.land()
+                return False, "비상 정지됨"
+            
             # 2. 목적지로 이동
             logger.info("[2/5] 목적지로 이동 중...")
             success, msg = self.move_to_gps(dest_lat, dest_lng, 0)  # 도착지 고도 0 (지상)
             if not success:
-                logger.warning(f"이동 실패: {msg}, 착륙 시도...")
-                self.land()
-                return False, f"목적지 이동 실패: {msg}"
+                logger.warning(f"이동 실패: {msg}, 현재 위치에서 착륙 후 복귀 시도...")
+                
+                # 안전하게 착륙
+                land_success, land_msg = self.land()
+                if not land_success:
+                    logger.error(f"착륙 실패: {land_msg}")
+                    return False, f"목적지 이동 실패 및 착륙 실패: {msg}"
+                
+                logger.info("착륙 완료, 10초 대기 후 복귀 시도...")
+                time.sleep(10)  # 충분한 대기 시간
+                
+                # 복귀를 위한 재이륙
+                logger.info("출발지로 복귀하기 위해 재이륙 중...")
+                takeoff_success, takeoff_msg = self.takeoff()
+                if not takeoff_success:
+                    logger.error(f"재이륙 실패: {takeoff_msg}, 현재 위치에 남습니다.")
+                    return False, f"목적지 이동 실패, 재이륙 불가: {msg}"
+                
+                time.sleep(5)  # 이륙 안정화
+                
+                # 출발지로 복귀
+                logger.info("출발지로 복귀 중...")
+                success_return, msg_return = self.move_to_gps(origin_lat, origin_lng, 0)
+                if success_return:
+                    logger.info("출발지 복귀 성공, 착륙합니다.")
+                    self.land()
+                    time.sleep(5)
+                    return False, f"목적지 이동 실패했지만 출발지로 복귀 완료: {msg}"
+                else:
+                    logger.error("출발지 복귀도 실패, 현재 위치에서 착륙합니다.")
+                    self.land()
+                    time.sleep(5)
+                    return False, f"목적지 이동 실패 및 복귀 실패: {msg}"
             
             time.sleep(2)  # 안정화 대기
+            
+            # 비상 정지 체크
+            if self.emergency_stop:
+                logger.warning("🚨 비상 정지 감지! 착륙합니다.")
+                self.land()
+                return False, "비상 정지됨"
             
             # 3. 목적지에서 착륙
             logger.info("[3/5] 목적지에서 착륙 중...")
@@ -429,6 +496,11 @@ class DroneController:
             
             time.sleep(5)  # 착륙 후 대기 (배송 완료)
             
+            # 비상 정지 체크
+            if self.emergency_stop:
+                logger.warning("🚨 비상 정지 감지! 미션 중단.")
+                return False, "비상 정지됨"
+            
             # 4. 재이륙 (목적지에서)
             logger.info("[4/5] 목적지에서 재이륙 중...")
             success, msg = self.takeoff()
@@ -436,6 +508,12 @@ class DroneController:
                 return False, f"재이륙 실패: {msg}"
             
             time.sleep(3)  # 안정화 대기
+            
+            # 비상 정지 체크
+            if self.emergency_stop:
+                logger.warning("🚨 비상 정지 감지! 착륙합니다.")
+                self.land()
+                return False, "비상 정지됨"
             
             # 5. 출발지로 복귀 (Return to Home)
             logger.info("[5/5] 출발지로 복귀 중...")
