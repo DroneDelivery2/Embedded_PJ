@@ -7,7 +7,10 @@ Flask를 사용한 백엔드 서버
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from drone_controller import DroneController
+from sms_queue import queue_sms, send_queued_sms, get_queue_status
 import logging
+import json
+import os
 
 app = Flask(__name__)
 
@@ -263,6 +266,8 @@ def start_delivery():
         origin_lng = data.get('origin_lng')
         dest_lat = data.get('dest_lat')
         dest_lng = data.get('dest_lng')
+        dest_name = data.get('dest_name', '도착지')  # 도착지 이름
+        phone_number = data.get('phone_number')  # 수신자 전화번호
         altitude = data.get('altitude', 3)  # 기본 고도 3m
         
         if not all([origin_lat, origin_lng, dest_lat, dest_lng]):
@@ -272,9 +277,12 @@ def start_delivery():
             }), 400
         
         logger.info(f"실외 배송 시작: ({origin_lat}, {origin_lng}) → ({dest_lat}, {dest_lng})")
+        logger.info(f"도착지 이름: {dest_name}")
+        if phone_number:
+            logger.info(f"수신자 전화번호: {phone_number}")
         
         success, message = drone.start_delivery(
-            origin_lat, origin_lng, dest_lat, dest_lng, altitude
+            origin_lat, origin_lng, dest_lat, dest_lng, phone_number, altitude, dest_name
         )
         
         return jsonify({
@@ -284,6 +292,57 @@ def start_delivery():
             
     except Exception as e:
         logger.error(f"실외 배송 시작 오류: {e}")
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+
+@app.route('/api/sms/queue', methods=['GET'])
+def get_sms_queue():
+    """SMS 큐 조회"""
+    try:
+        from sms_queue import SMS_QUEUE_FILE
+        
+        # 큐 파일 읽기
+        if os.path.exists(SMS_QUEUE_FILE):
+            with open(SMS_QUEUE_FILE, 'r', encoding='utf-8') as f:
+                queue = json.load(f)
+        else:
+            queue = []
+        
+        # 큐 상태 조회
+        status = get_queue_status()
+        
+        return jsonify({
+            'success': True,
+            'queue': queue,
+            'status': status
+        })
+    except Exception as e:
+        logger.error(f"SMS 큐 조회 오류: {e}")
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+
+@app.route('/api/sms/send', methods=['POST'])
+def send_sms_queue():
+    """대기 중인 SMS 전송"""
+    try:
+        logger.info("📤 대기 중인 SMS 전송 시작...")
+        
+        success_count, fail_count = send_queued_sms()
+        
+        return jsonify({
+            'success': True,
+            'success_count': success_count,
+            'fail_count': fail_count,
+            'message': f'SMS 전송 완료: 성공 {success_count}건, 실패 {fail_count}건'
+        })
+    except Exception as e:
+        logger.error(f"SMS 전송 오류: {e}")
         return jsonify({
             'success': False,
             'message': str(e)

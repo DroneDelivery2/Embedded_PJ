@@ -118,3 +118,10 @@
   background: #ccc;
   cursor: not-allowed;
 }
+
+.note {
+  font-size: 14px;
+  color: #666;
+  margin-top: 8px;
+  line-height: 1.5;
+}

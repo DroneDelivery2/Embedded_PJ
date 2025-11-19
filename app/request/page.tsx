@@ -17,6 +17,7 @@ export default function RequestPage() {
   const router = useRouter()
   const [origin, setOrigin] = useState<Site | null>(null)
   const [destination, setDestination] = useState<Site | null>(null)
+  const [phoneNumber, setPhoneNumber] = useState('')
   const [isStarting, setIsStarting] = useState(false)
 
   // 실제 GPS 좌표로 변경 필요
@@ -63,6 +64,8 @@ export default function RequestPage() {
             origin_lng: origin.lng,
             dest_lat: destination.lat,
             dest_lng: destination.lng,
+            dest_name: destination.name,
+            phone_number: phoneNumber,
             altitude: destination.alt
           })
         })
@@ -110,6 +113,20 @@ export default function RequestPage() {
           readOnly
           className={styles.input}
         />
+      </div>
+
+      <div className={styles.card}>
+        <h2>📱 수신자 전화번호 (선택사항)</h2>
+        <input
+          type="tel"
+          placeholder="010-1234-5678"
+          value={phoneNumber}
+          onChange={(e) => setPhoneNumber(e.target.value)}
+          className={styles.input}
+        />
+        <p className={styles.note}>
+          * 전화번호를 입력하면 배송 완료 시 SMS 알림이 전송됩니다
+        </p>
       </div>
 
       <div className={styles.card}>

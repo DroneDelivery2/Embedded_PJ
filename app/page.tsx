@@ -182,6 +182,13 @@ export default function Home() {
             <span>배송 시작</span>
           </div>
         </Link>
+
+        <Link href="/sms" className={styles.actionBtn}>
+          <div className={styles.btnContent}>
+            <span className={styles.icon}>📱</span>
+            <span>메시지 내역</span>
+          </div>
+        </Link>
       </div>
 
       <div className={styles.info}>

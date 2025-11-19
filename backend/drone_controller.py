@@ -11,6 +11,7 @@ from olympe.messages.ardrone3.GPSSettingsState import GPSFixStateChanged
 from olympe.messages.common.CommonState import BatteryStateChanged
 import logging
 import time
+from sms_queue import queue_sms
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -402,7 +403,7 @@ class DroneController:
             return False, msg
     
 
-    def start_delivery(self, origin_lat, origin_lng, dest_lat, dest_lng, altitude=3):
+    def start_delivery(self, origin_lat, origin_lng, dest_lat, dest_lng, phone_number=None, altitude=3, dest_name='도착지'):
         """
         배송 미션 시작 (이륙 → 목적지 이동 → 착륙 → 재이륙 → 출발지 복귀)
         Args:
@@ -410,7 +411,9 @@ class DroneController:
             origin_lng: 출발지 경도
             dest_lat: 도착지 위도
             dest_lng: 도착지 경도
-            altitude: 비행 고도 (기본 10m)
+            phone_number: 수신자 전화번호 (SMS 알림용)
+            altitude: 비행 고도 (기본 3m)
+            dest_name: 도착지 이름 (SMS 메시지용)
         Returns:
             tuple: (성공 여부, 메시지)
         """
@@ -493,6 +496,16 @@ class DroneController:
             success, msg = self.land()
             if not success:
                 return False, f"목적지 착륙 실패: {msg}"
+            
+            logger.info("✅ 목적지 도착 완료!")
+            
+            # SMS 알림 큐에 저장
+            if phone_number:
+                logger.info(f"📱 배송 완료 알림 큐에 저장 중... (수신자: {phone_number})")
+                queue_sms(
+                    phone=phone_number,
+                    message=f"우체국에서 발송한 택배가 '{dest_name}'에 도착했습니다"
+                )
             
             time.sleep(5)  # 착륙 후 대기 (배송 완료)
             
